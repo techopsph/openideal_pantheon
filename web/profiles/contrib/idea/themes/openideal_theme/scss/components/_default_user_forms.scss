@@ -1,0 +1,91 @@
+.user--register,
+.user--pass {
+  section.main-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .block-system-main-block {
+    display: flex;
+    justify-content: center;
+  }
+
+  .nav-tabs {
+    justify-content: center;
+  }
+}
+
+.user-login-form,
+.user-pass,
+.user-register-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  .password-confirm, .password-confirm-match, .password-field, .password-strength {
+    width: 100%;
+  }
+
+  .confirm-parent,
+  .password-parent {
+    max-width: unset;
+    min-width: unset;
+    overflow: unset;
+  }
+
+  .form-submit {
+    margin-bottom: 13px;
+    font-size: 22px;
+  }
+
+  .form-actions {
+    align-items: center;
+    display: flex;
+    text-transform: uppercase;
+    input {
+      border-width: 0;
+      @include btn-theme($btn-light, #2e5d6d);
+    }
+  }
+}
+
+.user-pass,
+.user-register-form {
+  padding: size(40) size(46);
+  max-width: size(1000);
+  background-color: $white;
+
+  h1 {
+    font-style: normal;
+    font-weight: 600;
+    font-size: size(25);
+    line-height: size(33);
+    text-align: center;
+    margin-bottom: size(41);
+  }
+
+  .form-group {
+    margin-bottom: size(10);
+  }
+
+  .form-control {
+    padding: size(15) size(14);
+  }
+
+  .form-group {
+    width: 100%;
+  }
+
+  .form-actions {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+
+    input {
+      width: 50%;
+    }
+  }
+}

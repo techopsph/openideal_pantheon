@@ -1,0 +1,338 @@
+<?php
+
+/**
+ * @file Administer Users by Role main module file.
+ */
+
+use Drupal\administerusersbyrole\Plugin\Action\AddRoleUser;
+use Drupal\administerusersbyrole\Plugin\Action\RemoveRoleUser;
+use Drupal\Core\Url;
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\user\UserInterface;
+use Drupal\user\RoleInterface;
+use Drupal\Core\Field\FieldDefinitionInterface;
+use Drupal\Core\Field\FieldItemListInterface;
+use Drupal\Core\Database\Query\AlterableInterface;
+
+/**
+ * Implements hook_ENTITY_TYPE_access() for entity type "user_role".
+ *
+ * @param \Drupal\user\RoleInterface $role
+ *   The role object to check access for.
+ *
+ * @param string $operation
+ *   The operation that is to be performed on $role.
+ *
+ * @param \Drupal\Core\Session\AccountInterface $account
+ *   The account trying to access the entity.
+ *
+ * @return \Drupal\Core\Access\AccessResultInterface
+ *   The access result. hook_entity_access() has detailed documentation.
+ */
+function administerusersbyrole_user_role_access(RoleInterface $role, $operation, AccountInterface $account) {
+  // Allow users without the permission "administer permissions" to view the
+  // role names in the /admin/people view.
+  if ($operation == 'view') {
+    return AccessResult::allowedIfHasPermission($account, 'access users overview');
+  }
+
+  return AccessResult::neutral();
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_access() for entity type "user".
+ *
+ * @param \Drupal\user\UserInterface $user
+ *   The user object to check access for.
+ *
+ * @param string $operation
+ *   The operation that is to be performed on $entity.
+ *
+ * @param \Drupal\Core\Session\AccountInterface $account
+ *   The account trying to access the entity.
+ *
+ * @return \Drupal\Core\Access\AccessResultInterface
+ *   The access result. hook_entity_access() has detailed documentation.
+ */
+function administerusersbyrole_user_access(UserInterface $user, $operation, AccountInterface $account) {
+  // Never allow uid 0 (anonymous) or 1 (master admin).
+  if (!$user->isNew() && ($user->id() <= 1)) {
+    return AccessResult::neutral();
+  }
+
+  // Grant access to view blocked users if we can update them.
+  if ($user->isBlocked() && ($operation == 'view')) {
+    $operation = 'update';
+  }
+
+  $result = \Drupal::service('administerusersbyrole.access')->access($user->getRoles(TRUE), $operation, $account);
+  return $result->cachePerPermissions()->addCacheableDependency($user);
+}
+
+/**
+ * Check for permission to assign roles to a user.
+ *
+ * @param \Drupal\user\UserInterface $user
+ *   The user object to check access for.
+ *
+ * @param \Drupal\Core\Session\AccountInterface $account
+ *   The account trying to access the entity.
+ *
+ * @param array $rids
+ *   Array of role ids to add/remove.
+ *
+ * @return \Drupal\Core\Access\AccessResultInterface
+ *   The access result. hook_entity_access() has detailed documentation.
+ */
+function administerusersbyrole_user_assign_role(UserInterface $user, AccountInterface $account, array $rids) {
+  // Allow access if
+  // 1a) The sub-admin can edit the user OR
+  // 1b) The sub-admin can assign all the roles the user already has AND
+  // 2) The sub-admin can assign all the roles that are being changed.
+  $oneA = administerusersbyrole_user_access($user, 'update', $account);
+  $oneB = administerusersbyrole_user_access($user, 'role-assign', $account);
+  $two = \Drupal::service('administerusersbyrole.access')->access($rids, 'role-assign', $account);
+  return $oneA->orIf($oneB)->andIf($two);
+}
+
+/**
+ * Implements hook_entity_create_access().
+ */
+function administerusersbyrole_entity_create_access(AccountInterface $account, array $context, $entity_bundle) {
+  if ($context['entity_type_id'] != 'user') {
+    return AccessResult::neutral();
+  }
+
+  return AccessResult::allowedIfHasPermission($account, 'create users');
+}
+
+/**
+ * Implements hook_entity_field_access().
+ */
+function administerusersbyrole_entity_field_access($operation, FieldDefinitionInterface $field_definition, AccountInterface $account, FieldItemListInterface $items = NULL) {
+  if ($field_definition->getTargetEntityTypeId() != 'user') {
+    return AccessResult::neutral();
+  }
+
+  $fields = ['name', 'status', 'mail'];
+  if ($operation == 'view') {
+    array_push($fields, 'roles', 'access');
+  }
+
+  if (!in_array($field_definition->getName(), $fields)) {
+    return AccessResult::neutral();
+  }
+
+  if (is_null($items)) {
+    if ($operation == 'view') {
+      // No field item list is passed.  This can be used to control whether to hide/show the whole column in views.
+      // Hence allow if 'access users overview'.
+      return AccessResult::allowedIfHasPermission($account, 'access users overview');
+    }
+    return AccessResult::neutral();
+  }
+
+  // Grant access to read/update extra fields to a sub-admin with permission to update the user.
+  return administerusersbyrole_user_access($items->getEntity(), 'update', $account);
+}
+
+/**
+ * Implements hook_validation_constraint_alter().
+ *
+ * @todo Remove when https://www.drupal.org/node/2992848 is fixed.
+ */
+function administerusersbyrole_validation_constraint_alter(array &$definitions) {
+  $definitions['UserMailRequired']['class'] = '\Drupal\administerusersbyrole\Constraint\OverrideUserMailRequired';
+}
+
+/**
+ * Implements hook_query_TAG_alter().
+ *
+ * Modifies the user listing results to exclude user accounts that the logged
+ * in user does not have permission to modify.
+ */
+function administerusersbyrole_query_administerusersbyrole_edit_access_alter(AlterableInterface $query) {
+  $account = \Drupal::currentUser();
+  // The tag administerusersbyrole_edit_access is used to indicate that we
+  // should filter out users where there isn't edit access.
+  if (!$account->hasPermission('administer users')) {
+    // Exclude the root user.
+    $query->condition('users_field_data.uid', 1, '<>');
+
+    // Hide any user accounts that the sub-admin can't edit or assign roles to.
+    $access_service = \Drupal::service('administerusersbyrole.access');
+    $roles = array_merge($access_service->listRoles('edit', $account), $access_service->listRoles('role-assign', $account));
+
+    if ($roles) {
+      // This code was changed from D7 to workaround D8 core bug https://www.drupal.org/node/2744069.
+      // Get a list of uids with roles that the user does not have permission
+      // to edit.
+      $subquery = \Drupal::database()->select('user__roles', 'ur2');
+      $subquery->fields('ur2', ['entity_id']);
+
+      $subquery->condition('ur2.roles_target_id', $roles, 'NOT IN');
+
+      // Exclude those uids from the result list.
+      $query->condition('users_field_data.uid', $subquery, 'NOT IN');
+    }
+    else {
+      // Exclude all users.
+      $query->condition('users_field_data.uid', NULL);
+    }
+  }
+}
+
+/**
+ * Implements hook_action_info_alter().
+ */
+function administerusersbyrole_action_info_alter(array &$definitions) {
+  $definitions['user_add_role_action']['class'] = AddRoleUser::class;
+  $definitions['user_remove_role_action']['class'] = RemoveRoleUser::class;
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_insert() for user_role.
+ */
+function administerusersbyrole_user_role_insert(RoleInterface $role) {
+  \Drupal::service('administerusersbyrole.access')->rolesChanged();
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_update() for user_role.
+ */
+function administerusersbyrole_user_role_update(RoleInterface $role) {
+  \Drupal::service('administerusersbyrole.access')->rolesChanged();
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_delete() for user_role.
+ */
+function administerusersbyrole_user_role_delete(RoleInterface $role) {
+  \Drupal::service('administerusersbyrole.access')->rolesChanged();
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Enable roles if required.
+ */
+function administerusersbyrole_form_user_form_alter(&$form, &$form_state) {
+  $user = $form_state->getFormObject()->getEntity();
+  $account = Drupal::currentUser();
+
+  // Allow empty email.
+  // @todo Remove when https://www.drupal.org/node/2992848 is fixed.
+  if (isset($form['account']['mail']) && !$user->getEmail() && \Drupal::currentUser()->hasPermission('allow empty user mail')) {
+    $form['account']['mail']['#required'] = FALSE;
+  }
+
+  if (isset($form['account']['roles']) && administerusersbyrole_user_access($user, 'update', $account)->isAllowed()) {
+    $allowed = \Drupal::service('administerusersbyrole.access')->listRoles('role-assign', $account);
+    $options = array_intersect_key($form['account']['roles']['#options'], array_flip($allowed));
+    $form['account']['roles']['#options'] = $options;
+    $form['account']['roles']['#access'] = !empty($options);
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Enable cancel delete if required.
+ */
+function administerusersbyrole_form_user_cancel_form_alter(&$form, &$form_state) {
+  $user = $form_state->getFormObject()->getEntity();
+  $account = Drupal::currentUser();
+
+  if (administerusersbyrole_user_access($user, 'delete', $account)->isAllowed()) {
+    $form['user_cancel_method']['user_cancel_delete']['#access'] = TRUE;
+  }
+}
+
+/**
+ * Implements hook_help().
+ */
+function administerusersbyrole_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    case 'help.page.administerusersbyrole':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Administer Users by Role allows site builders to set up fine‐grained permissions for allowing <i>sub‐admin</i> users to manage other users based on the target user\'s role.');
+      $output .= ' ' . t('The module defines new permissions to control access to edit/delete users and assign roles - more specific than Drupal Core\'s all‐or‐nothing “Administer users” and “Administer permissions”.');
+      $output .= ' ' . t('It also provides a “Create new users” permission and fine‐grained permissions for viewing users.') . '</p>';
+      $output .= '<h3>' . t('Configuration') . '</h3>';
+      $output .= '<p>' . t('Use the <a href=":config">configuration settings</a> to classify each role.', [':config' => Url::fromRoute('administerusersbyrole.settings')->toString()]) . '</p>';
+      $output .= administerusersbyrole_help_role_options();
+      $output .= '<h3>' . t('Core permissions') . '</h3>';
+      $output .= '<dl>';
+      $output .= '<dt>' . t('Administer users') . '/' . t('Administer permissions') . '</dt>';
+      $output .= '<dd>' . t('<em>Do not</em> set these for sub‐admins.  These permissions bypass all of the permissions in “Administer Users by Role".') . '</dd>';
+      $output .= '<dt>' . t('View user profiles') . '</dt>';
+      $output .= '<dd>' . t('Don\'t set this if you wish to use the fine-grained permissions for viewing users.') . '</dd>';
+      $output .= '<dt>' . t('Select method for cancelling account') . '</dt>';
+      $output .= '<dd>' . t('If you set this for sub‐admins, then the sub‐admin can choose a cancellation method when cancelling an account.  If not, then the sub‐admin will always use the default cancellation method.') . '</dd>';
+      $output .= '</dl>';
+      $output .= '<h3>' . t('New permissions') . '</h3>';
+      $output .= '<dl>';
+      $output .= '<dt>' . t('Access the users overview page') . '</dt>';
+      $output .= '<dd>' . t('Grants access to <a href=":people">manage users page</a>. Only users that can be edited are shown.', [':people' => Url::fromRoute('entity.user.collection')->toString()]) . '</dd>';
+      $output .= '<dt>' . t('Create new users') . '</dt>';
+      $output .= '<dd>' . t('Grants access to <a href=":create">create users</a>.', [':create' => Url::fromRoute('user.admin_create')->toString()]) . '</dd>';
+      $output .= '<dt>' . t('Allow empty user mail when managing users') . '</dt>';
+      $output .= '<dd>' . t('Create and manage users that have no email address.') . '</dd>';
+      $output .= '<dt>' . t('Assign allowed roles') . '</dt>';
+      $output .= '<dd>' . t('Allows assigning of any roles that have been configured as <i>allowed</i>.') . '</dd>';
+      $output .= '<dt>' . t('Edit users with allowed roles') . '</dt>';
+      $output .= '<dd>' . t('Allows editing of any user with <i>allowed</i> roles.') . '</dd>';
+      $output .= '<dt>' . t('Cancel users with allowed roles') . '</dt>';
+      $output .= '<dd>' . t('Allows cancelling of any user with <i>allowed</i> roles.') . '</dd>';
+      $output .= '<dt>' . t('View users with allowed roles') . '</dt>';
+      $output .= '<dd>' . t('Allows viewing of any user with <i>allowed</i> roles.  Note that this permission only controls direct viewing of a single user, it does not affect Views.') . '</dd>';
+      $output .= '</dl>';
+      $output .= '<p>' . t('There will be 4 extra permissions (assign/edit/cancel/view) for each role configured as <i>custom</i>.') . '</p>';
+      $output .= '<h3>' . t('Assign role without permission to edit users') . '</h3>';
+      $output .= '<p>' . t('A sub-admin without access to edit users can assign roles using actions in the <a href=":people">manage users page</a>.', [':people' => Url::fromRoute('entity.user.collection')->toString()]);
+      $output .= t('The sub-admin can assign roles to a user if EITHER the sub-admin can edit the user OR the sub-admin can assign all the roles the user already has.') . '</p>';
+      $output .= '<h3>' . t('Example') . '</h3>';
+      $output .= '<p>' . t('You have an organisation website with the following roles:') . '</p>';
+      $output .= '<ol>';
+      $output .= '<li>' . t('Overall Administrator - all permissions') . '</li>';
+      $output .= '<li>' . t('Content Editors - are not members and are managed by the administrator') . '</li>';
+      $output .= '<li>' . t('Membership secretary - needs to view and edit membership information') . '</li>';
+      $output .= '<li>' . t('Ordinary Members - have basic authenticated user rights') . '</li>';
+      $output .= '</ol>';
+      $output .= '<p>' . t('What is wanted is for the membership secretary to be able to view and edit members, but not other roles, therefore the roles are configured as follows:') . '</p>';
+      $output .= '<ol>';
+      $output .= '<li>' . t('Administrator (Forbidden by default)') . '</li>';
+      $output .= '<li>' . t('Content editors - Forbidden') . '</li>';
+      $output .= '<li>' . t('Membership Secretary - Allowed') . '</li>';
+      $output .= '<li>' . t('Ordinary Members - Allowed') . '</li>';
+      $output .= '</ol>';
+      return $output;
+
+    case 'administerusersbyrole.settings':
+      $perms_link = Url::fromRoute('user.admin_permissions', [], ['fragment' => 'module-administerusersbyrole'])->toString();
+      $output = '<p>' . t('Use this page to classify each role before you <a href=:perms>assign permissions</a>.', [':perms' => $perms_link]) . '</p>';
+      $output .= administerusersbyrole_help_role_options();
+      $output .= t('See the <a href=":help">module help</a> for information.', [':help' => Url::fromRoute('help.page', ['name' => 'administerusersbyrole'])->toString()]);
+      return $output;
+  }
+}
+
+/**
+ * Returns a fragment of help text describing the configuration options for
+ * roles.
+ */
+function administerusersbyrole_help_role_options() {
+  $options = '<dl>';
+  $options .= '<dt>' . t('Allowed') . '</dt>';
+  $options .= '<dd>' . t('Grants sub‐admins the ability to manage users with that role if they have the related permission such as “Edit users with allowed roles”') . '</dd>';
+  $options .= '<dt>' . t('Forbidden') . '</dt>';
+  $options .= '<dd>' . t('Means sub‐admins cannot manage users with that role.  For example, the ‘admin’ role is always <i>forbidden</i>.') . '</dd>';
+  $options .= '<dt>' . t('Custom') . '</dt>';
+  $options .= '<dd>' . t('Allows for more selective access determined by extra permissions for that role.') . '</dd>';
+  $options .= '</ul>';
+  $options .= '<p>' . t('The sub‐admin can access a target user provided they have access to all of that user\'s roles.') . '</p>';
+  return $options;
+}

@@ -1,0 +1,9 @@
+.votingapi-widgets.like .like-rating a {
+  border: none !important;
+  margin-right: .5em;
+  display: inline-block;
+}
+
+.votingapi-widgets.like .like-rating a.disabled {
+  opacity: 0.5;
+}

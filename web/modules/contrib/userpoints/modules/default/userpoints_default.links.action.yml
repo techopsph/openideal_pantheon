@@ -1,0 +1,6 @@
+userpoints_default.user_points.add_transaction:
+  route_name: userpoints_default.user_points.add_transaction_form
+  title: 'Add points transaction'
+  appears_on:
+    - view.user_points_default_totals.page_userpoints_default_userpointstab
+    - view.user_points_default_totals.page_userpoints_default_pendinguserpointstab

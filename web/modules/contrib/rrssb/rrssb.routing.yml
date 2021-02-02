@@ -1,0 +1,31 @@
+entity.rrssb_button_set.collection:
+  path: '/admin/config/content/rrssb'
+  defaults:
+    _entity_list: 'rrssb_button_set'
+    _title: 'Ridiculously Responsive Social Sharing Buttons'
+  requirements:
+    _permission: 'administer rrssb'
+
+entity.rrssb_button_set.add_form:
+  path: '/admin/config/content/rrssb/add'
+  defaults:
+    _entity_form: 'rrssb_button_set.add'
+    _title: 'Add RRSSB Button Set'
+  requirements:
+    _permission: 'administer rrssb'
+
+entity.rrssb_button_set.edit_form:
+  path: '/admin/config/content/rrssb/{rrssb_button_set}'
+  defaults:
+    _entity_form: 'rrssb_button_set.edit'
+    _title: 'Edit RRSSB Button Set'
+  requirements:
+    _permission: 'administer rrssb'
+
+entity.rrssb_button_set.delete_form:
+  path: '/admin/config/content/rrssb/{rrssb_button_set}/delete'
+  defaults:
+    _entity_form: 'rrssb_button_set.delete'
+    _title: 'Delete RRSSB Button Set'
+  requirements:
+    _permission: 'administer rrssb'

@@ -1,0 +1,11 @@
+name: CKEditor Mentions
+type: module
+description: CKEditor plugin for user mentioning and inserting.
+package: CKEditor
+core: '8.x'
+core_version_requirement: ^8
+
+dependencies:
+  - drupal:ckeditor
+  - drupal:image
+  - realname:realname

@@ -1,0 +1,113 @@
+<?php
+
+/**
+ * @file
+ * Contains install and update functions.
+ */
+
+use Drupal\block\Entity\Block;
+use Drupal\node\Entity\NodeType;
+use Drupal\Core\Config\Entity\ConfigEntityType;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+
+/**
+ * Define the RRSSB library location.
+ */
+define('RRSSB_LIBRARY_MIN_VERSION', '0.5.x');
+define('RRSSB_LIBRARY_URI', 'https://github.com/AdamPS/rrssb-plus');
+
+/**
+ * Implements hook_requirements().
+ */
+function rrssb_requirements($phase) {
+  // Check for library version.  We do a runtime check only,
+  // as we don't want to block install - the normal sequence
+  // is to install the module and then use the drush command to get the library.
+  $requirements = [];
+  if ($phase == 'runtime') {
+    $requirements['rrssb']['title'] = t('RRSSB+ library');
+    $library = \Drupal::service('library.discovery')->getLibraryByName('rrssb', 'main');
+    $downloadMessage =
+       t('Please download the RRSSB library using "drush rrssb-plugin" or from <a href="@link">@link</a>.', ['@link' => RRSSB_LIBRARY_URI]);
+
+    if (!isset($library['version'])) {
+      $requirements['rrssb']['value'] = t('Not installed');
+      $requirements['rrssb']['severity'] = REQUIREMENT_ERROR;
+      $requirements['rrssb']['description'] = $downloadMessage;
+    }
+    else {
+      $requirements['rrssb']['value'] = $library['version'];
+      $compare = version_compare($library['version'], RRSSB_LIBRARY_MIN_VERSION);
+
+      if ($compare < 0) {
+        $requirements['rrssb']['severity'] = REQUIREMENT_ERROR;
+        $requirements['rrssb']['description'] = t('Library version is too old.  @download', ['@download' => $downloadMessage]);
+      }
+      else {
+        $requirements['rrssb']['severity'] = REQUIREMENT_OK;
+      }
+    }
+  }
+  return $requirements;
+}
+
+/**
+ * Update to multiple button sets.
+ */
+function rrssb_update_8201() {
+  \Drupal::entityDefinitionUpdateManager()->installEntityType(new ConfigEntityType([
+    'id' => 'rrssb_button_set',
+    'label' => new TranslatableMarkup('RRSSB Button Set'),
+    'handlers' => [
+      'list_builder' => 'Drupal\rrssb\RRSSBListBuilder',
+      'form' => [
+        'add' => 'Drupal\rrssb\Form\RRSSBSettingsForm',
+        'edit' => 'Drupal\rrssb\Form\RRSSBSettingsForm',
+        'delete' => 'Drupal\rrssb\Form\RRSSBDeleteForm',
+      ],
+    ],
+    'config_prefix' => 'button_set',
+    'admin_permission' => 'administer rrssb',
+    'entity_keys' => [
+      'id' => 'id',
+      'label' => 'label',
+    ],
+    'links' => [
+      'edit-form' => '/admin/config/content/rrssb/{button_set}',
+      'delete-form' => '/admin/config/content/rrssb/{button_set}/delete',
+      'collection' => '/admin/config/content/rrssb',
+    ],
+  ]));
+
+  $config = \Drupal::config('rrssb.settings')->get();
+  $config['id'] = 'default';
+  $config['label'] = 'Default';
+  \Drupal::entityTypeManager()->getStorage('rrssb_button_set')->create($config)->save();
+
+  foreach (NodeType::loadMultiple() as $type) {
+    $enabled = $type->getThirdPartySetting('rrssb', 'show', FALSE);
+    $type->unsetThirdPartySetting('rrssb', 'show');
+    $type->setThirdPartySetting('rrssb', 'button_set', $enabled ? 'default' : '')->save();
+  }
+
+  $blockIds = \Drupal::entityQuery('block')->condition('plugin', 'rrssb_block')->execute();
+  foreach (Block::loadMultiple($blockIds) as $block) {
+    $settings = $block->get('settings');
+    $settings['button_set'] = 'default';
+    $block->set('settings', $settings);
+    $block->save();
+  }
+
+  \Drupal::configFactory()->getEditable('rrssb.settings')->delete();
+
+  \Drupal::cache()->delete('rrssb_buttons');
+  rrssb_cache_flush();
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function rrssb_uninstall() {
+  // Remove auto-generated files.
+  \Drupal::service('file_system')->deleteRecursive('public://rrssb');
+}

@@ -1,0 +1,21 @@
+administer transaction types:
+  title: 'Administer transaction types'
+  description: 'Maintain the types of transactions available.'
+  restrict access: true
+
+administer transactions:
+  title: 'Administer transactions'
+  description: 'Update or delete any transaction without any restriction.'
+  restrict access: true
+
+# create <transaction_type> transaction
+# view any <transaction_type> transaction
+# view own <transaction_type> transaction
+# edit any <transaction_type> transaction
+# edit own <transaction_type> transaction
+# delete any <transaction_type> transaction
+# delete own <transaction_type> transaction
+# execute any <transaction_type> transaction
+# execute own <transaction_type> transaction
+permission_callbacks:
+  - \Drupal\transaction\TransactionPermissions::transactionTypePermissions

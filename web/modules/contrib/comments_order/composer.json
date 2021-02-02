@@ -1,0 +1,14 @@
+{
+  "name": "drupal/comments_order",
+  "type": "drupal-module",
+  "description": "This module allows to set order for node comments",
+  "keywords": ["Drupal", "Comment"],
+  "license": "GPL-2.0+",
+  "homepage": "https://www.drupal.org/project/comments_order",
+  "minimum-stability": "1.0",
+  "support": {
+    "issues": "https://www.drupal.org/project/issues/comments_order",
+    "source": "http://cgit.drupalcode.org/comments_order"
+  },
+  "require": { }
+}

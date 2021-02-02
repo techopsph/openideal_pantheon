@@ -1,0 +1,10 @@
+{
+  "name": "drupal/rrssb",
+  "type": "drupal-module",
+  "description": "Adds the ability to use the Ridiculously Responsive Social Share Buttons to your Drupal site.",
+  "homepage": "https://www.drupal.org/project/rrssb",
+  "license": "GPL-2.0+",
+  "require": {
+    "rrssb/rrssb-plus": "^0.5.0"
+  }
+}

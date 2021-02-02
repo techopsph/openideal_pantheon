@@ -1,0 +1,27 @@
+<?php
+
+/**
+ * @file
+ * Requirements and update functions for the transaction module.
+ */
+
+use Drupal\Core\Field\BaseFieldDefinition;
+
+/**
+ * Add 'execution_sequence' field to 'transaction' entities.
+ */
+function transaction_update_8001() {
+  $storage_definition = BaseFieldDefinition::create('integer')
+    ->setLabel(t('Execution sequence'))
+    ->setDescription(t('The order number on which this transaction was executed.'))
+    ->setSetting('unsigned', TRUE)
+    ->setReadOnly(TRUE)
+    ->setDisplayOptions('view', [
+      'type' => 'number_integer',
+      'region' => 'hidden',
+    ])
+    ->setDisplayConfigurable('view', TRUE);
+
+  \Drupal::entityDefinitionUpdateManager()
+    ->installFieldStorageDefinition('execution_sequence', 'transaction', 'transaction', $storage_definition);
+}

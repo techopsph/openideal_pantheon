@@ -1,0 +1,54 @@
+<?php
+
+/**
+ * @file
+ * Contains group_roles_management.module.
+ */
+
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\group\Access\GroupAccessResult;
+
+/**
+ * Implements hook_help().
+ */
+function group_roles_management_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the group_roles_management module.
+    case 'help.page.group_roles_management':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Allows to set permissions to manage members of specific role.') . '</p>';
+      return $output;
+
+    default:
+  }
+}
+
+/**
+ * Implements hook_entity_access().
+ */
+function group_roles_management_group_content_access(EntityInterface $entity, $operation, AccountInterface $account) {
+  if ($entity->getContentPlugin()->getPluginId() == 'group_membership') {
+    $group = $entity->getGroup();
+    switch ($operation) {
+      case 'update':
+        // Check role edit permission.
+        if (!$entity->group_roles->isEmpty() && $role_id = $entity->group_roles->first()->target_id) {
+          return GroupAccessResult::allowedIfHasGroupPermission($group, $account, "manage members with role {$role_id}");
+        }
+        break;
+
+      case 'delete':
+        // Check role delete permission.
+        if (!$entity->group_roles->isEmpty() && $role_id = $entity->group_roles->first()->target_id) {
+          return GroupAccessResult::allowedIfHasGroupPermission($group, $account, "manage members with role {$role_id}");
+        }
+        break;
+    }
+  }
+
+  return AccessResult::neutral();
+}

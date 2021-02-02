@@ -1,0 +1,13 @@
+name: 'Moderation state buttons widget'
+type: module
+description: 'Provides a widget for moderation states that shows them as buttons."'
+# core: 8.x
+package: 'Content moderation'
+dependencies:
+  - content_moderation
+
+# Information added by Drupal.org packaging script on 2019-02-22
+version: '8.x-1.0-alpha3'
+core: '8.x'
+project: 'moderation_state_buttons_widget'
+datestamp: 1550846297

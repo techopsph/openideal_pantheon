@@ -1,0 +1,22 @@
+{
+  "name": "drupal/votingapi_reaction",
+  "description": "A flexible field based on Voting API module.",
+  "type": "drupal-module",
+  "homepage": "https://www.drupal.org/project/votingapi_reaction",
+  "authors": [
+      {
+          "name": "Elaman Imashov (elaman)",
+          "homepage": "https://www.drupal.org/u/elaman",
+          "role": "Maintainer"
+      }
+  ],
+  "support": {
+      "issues": "https://www.drupal.org/project/issues/votingapi_reaction",
+      "source": "https://cgit.drupalcode.org/votingapi_reaction"
+  },
+  "license": "GPL-2.0",
+  "require": {
+    "drupal/core": "^8.7.7 || ^9",
+    "drupal/votingapi": "^3.0"
+  }
+}

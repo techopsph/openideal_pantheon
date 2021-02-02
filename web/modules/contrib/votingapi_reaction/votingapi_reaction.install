@@ -1,0 +1,68 @@
+<?php
+
+/**
+ * @file
+ * Contains voting_reactions.install.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function votingapi_reaction_install() {
+  $reactions = _votingapi_reaction_get_reactions();
+  $voteTypeStorage = \Drupal::service('entity_type.manager')
+    ->getStorage('vote_type');
+
+  // Create reactions.
+  $voteTypes = $voteTypeStorage->loadMultiple(
+    $voteTypeStorage->getQuery()
+      ->condition('id', array_keys($reactions), 'IN')
+      ->execute()
+  );
+  foreach ($reactions as $key => $label) {
+    $voteType = empty($voteTypes[$key])
+      ? $voteTypeStorage->create([
+        'id' => $key,
+        'label' => $label,
+        'value_type' => 'points',
+        'description' => 'Automatically created reaction',
+      ])
+      : $voteTypes[$key];
+    $voteType->setThirdPartySetting('votingapi_reaction', 'reaction', TRUE);
+    $voteType->setThirdPartySetting('votingapi_reaction', 'icon', '');
+    $voteType->save();
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function votingapi_reaction_uninstall() {
+  $reactions = _votingapi_reaction_get_reactions();
+  $voteTypeStorage = \Drupal::service('entity_type.manager')
+    ->getStorage('vote_type');
+
+  // Remove reactions.
+  $voteTypes = $voteTypeStorage->loadMultiple(
+    $voteTypeStorage->getQuery()
+      ->condition('id', array_keys($reactions), 'IN')
+      ->execute()
+  );
+  foreach ($voteTypes as $voteType) {
+    $voteType->delete();
+  }
+}
+
+/**
+ * Helper function to return default reactions.
+ */
+function _votingapi_reaction_get_reactions() {
+  return [
+    "reaction_angry" => "I'm angry",
+    "reaction_laughing" => "I'm laughing",
+    "reaction_like" => "I like this",
+    "reaction_love" => "I love this",
+    "reaction_sad" => "I'm sad",
+    "reaction_surprised" => "I'm surprised",
+  ];
+}

@@ -1,0 +1,5 @@
+rrssb.admin_settings:
+  title: 'Ridiculously Responsive Social Sharing Buttons'
+  route_name: entity.rrssb_button_set.collection
+  description: 'Configure the Ridiculously Responsive Social Sharing Buttons to select which social buttons you would like to enable.'
+  parent: system.admin_config_content

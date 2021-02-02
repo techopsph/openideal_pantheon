@@ -1,0 +1,65 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - transaction.operation.userpoints_rules_earn_on_login
+  enforced:
+    module:
+      - userpoints_rules_example
+id: userpoints_rules_earn_on_login
+label: 'Earn points on user login'
+events:
+  -
+    event_name: rules_user_login
+description: 'Gives user points to returned users.'
+tags:
+  - userpoints
+  - example
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: 77be8949-bbdd-47c4-b5d6-c6a711dc17a8
+  conditions:
+    id: rules_and
+    uuid: ad6aa0cb-3934-4b1d-8234-0ff378af0537
+    conditions: {  }
+  actions:
+    id: rules_action_set
+    uuid: f9702de5-c9f0-44a2-a6c9-bbbb0fcb0370
+    actions:
+      -
+        id: rules_action
+        uuid: 2339e9b7-a38a-42cf-9a97-1f68e3319fd3
+        context_values:
+          transaction_type_id: userpoints_default_points
+          operation_id: userpoints_rules_earn_on_login
+          transaction_field_amount: '5'
+          transaction_field_balance: '0'
+          transaction_field_log_message: ''
+        context_mapping:
+          target_entity: account
+        context_processors:
+          transaction_type_id:
+            rules_tokens: {  }
+          operation_id:
+            rules_tokens: {  }
+          transaction_field_amount:
+            rules_tokens: {  }
+          transaction_field_balance:
+            rules_tokens: {  }
+          transaction_field_log_message:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: 'transaction_create:userpoints'
+      -
+        id: rules_action
+        uuid: 61b5e133-9350-44e6-b7c0-f079cf53c2d7
+        context_values:
+          immediate: ''
+        context_mapping:
+          transaction: transaction
+        context_processors:
+          immediate:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: transaction_execute

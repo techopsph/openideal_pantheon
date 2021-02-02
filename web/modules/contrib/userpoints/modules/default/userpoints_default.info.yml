@@ -1,0 +1,16 @@
+name: 'User points default'
+type: module
+description: 'A set of configuration and views for a default user points system.'
+package: User Points
+configure: view.user_points_default_totals.page_userpoints_default_totals
+core: 8.x
+core_version_requirement: ^8 || ^9
+dependencies:
+  - userpoints:userpoints
+  - drupal:options
+  - drupal:views
+
+# Information added by Drupal.org packaging script on 2020-08-18
+version: '8.x-1.0-beta1'
+project: 'userpoints'
+datestamp: 1597767319

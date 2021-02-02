@@ -1,0 +1,4 @@
+administer rrssb:
+  title: 'Administer RRSSB'
+  description: 'Permission to allow user to configure the Ridiculously Responsive Social Share Buttons.'
+  restrict access: TRUE

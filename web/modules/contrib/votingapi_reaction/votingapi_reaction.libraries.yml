@@ -1,0 +1,18 @@
+styles:
+  version: VERSION
+  css:
+    base:
+      css/votingapi_reaction.css: {}
+settings_styles:
+  version: VERSION
+  css:
+    base:
+      css/votingapi_reaction_settings.css: {}
+scripts:
+  version: VERSION
+  js:
+    js/votingapi_reaction.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal.ajax
+    - votingapi_reaction/styles

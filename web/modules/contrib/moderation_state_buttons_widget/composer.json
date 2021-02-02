@@ -1,0 +1,14 @@
+{
+  "name": "drupal/moderation_state_buttons_widget",
+  "type": "drupal-module",
+  "description": "Provides a widget for moderation states that shows them as buttons.",
+  "keywords": ["Drupal"],
+  "license": "GPL-2.0+",
+  "homepage": "https://www.drupal.org/project/moderation_state_buttons_widget",
+  "minimum-stability": "dev",
+  "support": {
+    "issues": "https://www.drupal.org/project/issues/moderation_state_buttons_widget",
+    "source": "http://cgit.drupalcode.org/moderation_state_buttons_widget"
+  },
+  "require": { }
+}

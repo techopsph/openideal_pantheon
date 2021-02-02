@@ -1,0 +1,21 @@
+transaction.add_transaction_type_action:
+  route_name: transaction.transaction_type_creation
+  title: 'Add transaction type'
+  appears_on:
+    - entity.transaction_type.collection
+
+transaction.add_transaction_operation_action:
+  route_name: entity.transaction_operation.add_form
+  title: 'Add transaction operation'
+  appears_on:
+    - entity.transaction_operation.collection
+
+transaction.add_transaction_action:
+  route_name: entity.transaction.add_form
+  title: 'Add transaction'
+  appears_on:
+    - entity.transaction.collection
+
+transaction.entities_add_actions:
+  class: \Drupal\Core\Menu\LocalActionDefault
+  deriver: \Drupal\transaction\Plugin\Derivative\TransactionLocalAction

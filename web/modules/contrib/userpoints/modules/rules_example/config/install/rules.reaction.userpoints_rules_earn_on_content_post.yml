@@ -1,0 +1,87 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - transaction.operation.userpoints_rules_earn_on_content_post
+  enforced:
+      module:
+        - userpoints_rules_example
+id: userpoints_rules_earn_on_content_post
+label: 'Earn points for content added'
+events:
+  -
+    event_name: 'rules_entity_insert:node'
+description: 'Grant some points to content authors.'
+tags:
+  - userpoints
+  - example
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: ad278475-6384-4d55-b0d9-c1af73167f87
+  conditions:
+    id: rules_and
+    uuid: 61e52580-bbf0-4891-9f0e-d3264bf42a4d
+    conditions: {  }
+  actions:
+    id: rules_action_set
+    uuid: 51f53d43-d562-4d96-84d1-57159d1edd5e
+    actions:
+      -
+        id: rules_action
+        uuid: ac254a68-2ea6-4b5e-8675-cb2f519965c3
+        context_values:
+          type: user
+        context_mapping:
+          entity_id: node.uid.target_id
+        context_processors:
+          type:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_entity_fetch_by_id
+      -
+        id: rules_action
+        uuid: 6cb00f19-fc81-4b56-a55d-602e9b8f4901
+        context_values:
+          transaction_type_id: userpoints_default_points
+          operation_id: userpoints_rules_earn_on_content_post
+          transaction_field_amount: '20'
+          transaction_field_balance: '0'
+          transaction_field_log_message: ''
+        context_mapping:
+          target_entity: entity_fetched
+        context_processors:
+          transaction_type_id:
+            rules_tokens: {  }
+          operation_id:
+            rules_tokens: {  }
+          transaction_field_amount:
+            rules_tokens: {  }
+          transaction_field_balance:
+            rules_tokens: {  }
+          transaction_field_log_message:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: 'transaction_create:userpoints'
+      -
+        id: rules_action
+        uuid: b78f69ef-d71d-44a5-bfdf-d2609ce1cb32
+        context_values: {  }
+        context_mapping:
+          data: transaction.field_userpoints_default_linkref
+          value: node
+        context_processors: {  }
+        provides_mapping: {  }
+        action_id: rules_data_set
+      -
+        id: rules_action
+        uuid: 77c62abd-f4fb-43e4-b2f6-916fedaaed6b
+        context_values:
+          immediate: ''
+        context_mapping:
+          transaction: transaction
+        context_processors:
+          immediate:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: transaction_execute

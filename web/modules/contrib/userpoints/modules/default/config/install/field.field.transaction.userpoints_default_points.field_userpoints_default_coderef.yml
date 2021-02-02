@@ -1,0 +1,18 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.transaction.field_userpoints_default_coderef
+    - transaction.type.userpoints_default_points
+id: transaction.userpoints_default_points.field_userpoints_default_coderef
+field_name: field_userpoints_default_coderef
+entity_type: transaction
+bundle: userpoints_default_points
+label: 'Internal reference'
+description: 'Enter an optional reference code for this transaction. This is for internal tracking and is not shown to the end user.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string

@@ -1,0 +1,20 @@
+{
+  "name": "link-underliner",
+  "version": "1.0.4",
+  "description": "Add custom link underlines with SVG",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "svg",
+    "link",
+    "underline"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shadeed/underliner.git"
+  },
+  "author": "Ahmad Shadeed <shadeed9@gmail.com> (http://ishadeed.com)",
+  "license": "ISC"
+}

@@ -1,0 +1,11 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - transaction.type.userpoints_default_points
+id: userpoints_default_admin
+label: Admin
+transaction_type: userpoints_default_points
+description: 'Administrative adjustment by [transaction:uid]'
+details:
+  - '[transaction:field_userpoints_default_linkref]'

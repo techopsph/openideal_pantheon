@@ -1,0 +1,23 @@
+{
+    "name": "drupal/votingapi",
+    "type": "drupal-module",
+    "description": "Voting API",
+    "keywords": ["Drupal"],
+    "license": "GPL-2.0-or-later",
+    "homepage": "http://www.drupal.org/project/votingapi",
+    "support": {
+      "issues": "http://drupal.org/project/issues/votingapi",
+      "source": "http://cgit.drupalcode.org/votingapi"
+    },
+    "require-dev": {
+      "drupal/token": "^1.5"
+    },
+    "minimum-stability": "dev",
+    "extra": {
+        "drush": {
+            "services": {
+                "drush.services.yml": "^9 || ^10"
+            }
+        }
+    }
+}

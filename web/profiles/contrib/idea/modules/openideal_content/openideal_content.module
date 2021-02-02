@@ -1,0 +1,147 @@
+<?php
+
+/**
+ * @file
+ * Contains openideal_content.module.
+ */
+
+use Drupal\Core\Ajax\AjaxResponse;
+use Drupal\Core\Ajax\InsertCommand;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
+use Drupal\views\Plugin\views\query\QueryPluginBase;
+use Drupal\views\ViewExecutable;
+
+/**
+ * Implements hook_link_alter().
+ */
+function openideal_content_link_alter(&$variables) {
+  // All external links should open in a new tab.
+  if ($variables['url']->isExternal()) {
+    $variables['options']['attributes']['target'] = '_blank';
+  }
+}
+
+/**
+ * Implements hook_form_BASE_FORM_ID_alter().
+ */
+function openideal_content_form_vote_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  $entity = $form_state->getFormObject()->getEntity();
+  if (isset($form['type']['#ajax']['callback']) && $entity->entity_type->value == 'node') {
+    $form['type']['#ajax']['callback'] = '_openideal_content_vote_ajax_submit';
+  }
+}
+
+/**
+ * Ajax submit handler.
+ *
+ * Replace submit handler from voting api, and set the
+ * voting count into hidden field for FE purposes.
+ */
+function _openideal_content_vote_ajax_submit(&$form, FormStateInterface $form_state) {
+  // Todo: change the button label here.
+  // @see Drupal.behaviors.openidealThemeLikeWidgetLabel
+  $form_state->getFormObject()
+    ->submitForm($form, $form_state);
+  $callback_object = $form_state->getFormObject();
+  $field_items = $form_state->get('field_items');
+  $settings = $form_state->get('formatter_settings') + $field_items->getSettings();
+  $results = \Drupal::service('votingapi_reaction.manager')->getResults($callback_object->getEntity(), $settings);
+  $result = array_sum(array_column($results, 'vote_sum'));
+  $response = new AjaxResponse();
+
+  // Form insert.
+  $html = \Drupal::service('renderer')->renderRoot($form);
+  $response->addCommand(new InsertCommand(NULL, $html));
+  $response->setAttachments($form['#attached']);
+
+  // Votes update.
+  $content = '<p class="idea-statistics-block--list__item--count" data-openideal-vote="like_tag">' . $result . '</p>';
+  $response->addCommand(new InsertCommand('[data-openideal-vote="like_tag"]', $content));
+
+  return $response;
+}
+
+/**
+ * Implements hook_views_query_alter().
+ */
+function openideal_content_views_query_alter(ViewExecutable $view, QueryPluginBase $query) {
+  if ($view->id() == 'public_activity' && $view->current_display === 'personalized_activity_block' && $user = \Drupal::routeMatch()->getParameter('user')) {
+    foreach ($query->where as &$condition_group) {
+      foreach ($condition_group['conditions'] as &$condition) {
+        if ($condition['value'] == '[user-page-id]') {
+          $condition['value'] = $user->id();
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function openideal_content_form_views_exposed_form_alter(&$form, FormStateInterface $form_state) {
+  if ($form['#id'] == 'views-exposed-form-frontpage-front-page'
+    || $form['#id'] == 'views-exposed-form-user-admin-people-community-page'
+    || $form['#id'] == 'views-exposed-form-challenges-all-challenges-page'
+    || $form['#id'] == 'views-exposed-form-ideas-all-ideas-page') {
+    $form['search']['#placeholder'] = t('Search');
+
+    if ($form['#id'] == 'views-exposed-form-frontpage-front-page') {
+      $form['add_idea_button'] = [
+        '#type' => 'link',
+        '#title' => t('Add idea'),
+        '#url' => Url::fromRoute('node.add', ['node_type' => 'idea']),
+        '#attributes' => ['class' => ['frontpage-add-idea-button']],
+        '#access' => \Drupal::currentUser()->isAuthenticated(),
+        '#weight' => 999,
+      ];
+    }
+
+    $field = $form['#id'] == 'views-exposed-form-challenges-all-challenges-page' ? 'sort_by' : 'sort_bef_combine';
+
+    // Create custom options and hide real one.
+    $form[$field]['#attributes']['class'][] = 'd-none';
+    $form['custom_sort'] = [
+      '#type' => 'container',
+      '#attributes' => ['class' => ['custom-sort']],
+      'dropdown' => [
+        '#type' => 'html_tag',
+        '#tag' => 'span',
+        '#value' => 'sort',
+        '#attributes' => ['class' => ['custom-sort--button']],
+      ],
+      'options' => [
+        '#type' => 'container',
+        '#attributes' => ['class' => ['custom-sort--options']],
+      ],
+    ];
+
+    foreach ($form[$field]['#options'] as $id => $option) {
+      $form['custom_sort']['options'][$option] = [
+        '#type' => 'html_tag',
+        '#tag' => 'span',
+        '#value' => $option,
+        '#attributes' => [
+          'class' => ['custom-sort--option'],
+          'data-option-id' => $id,
+        ],
+      ];
+    }
+  }
+  $form['#attached']['library'][] = 'openideal_content/openideal_content.masonry';
+}
+
+/**
+ * Implements hook_entity_delete().
+ */
+function openideal_content_entity_delete(EntityInterface $entity) {
+  // Delete all messages that have a reference to an entity.
+  $entity_type_id = $entity->getEntityTypeId();
+  if (in_array($entity_type_id, ['node', 'comment', 'user'])) {
+    $storage = \Drupal::entityTypeManager()->getStorage('message');
+    $entities = $storage->loadByProperties(['field_' . $entity_type_id . '_reference' => $entity->id()]);
+    $storage->delete($entities);
+  }
+}

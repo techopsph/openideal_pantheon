@@ -1,0 +1,69 @@
+<?php
+
+/**
+ * @file
+ * Contains installation and update scripts.
+ */
+
+use Drupal\image\Entity\ImageStyle;
+
+/**
+ * Implements hook_install().
+ */
+function ckeditor_mentions_install() {
+  // Create tiny icon image style.
+  $style = ImageStyle::create(['name' => 'mentions_icon', 'label' => 'CKEditor Mentions Icon']);
+
+  // Create effect.
+  $configuration = [
+    'uuid' => NULL,
+    'id' => 'image_scale_and_crop',
+    'weight' => 0,
+    'data' => [
+      'width' => 60,
+      'height' => 60,
+    ],
+  ];
+  $effect = \Drupal::service('plugin.manager.image.effect')->createInstance($configuration['id'], $configuration);
+
+  // Add it to the image style and save.
+  $style->addImageEffect($effect->getConfiguration());
+  $style->save();
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function ckeditor_mentions_uninstall() {
+  // Remove tiny icon image style.
+  Drupal::configFactory()->getEditable('image.style.mentions_icon')->delete();
+}
+
+/**
+ * Implements hook_requirements().
+ */
+function ckeditor_mentions_requirements($phase) {
+  $requirements = [];
+
+  if ($phase === 'install' || $phase === 'runtime') {
+    $plugin_detected = file_exists(DRUPAL_ROOT . '/libraries/ckeditor/plugins/mentions/plugin.js');
+
+    if ($plugin_detected) {
+      $requirements['mentions'] = [
+        'title' => t('CKEditor Mentions'),
+        'value' => t('Plugin detected'),
+        'severity' => REQUIREMENT_OK,
+      ];
+    }
+    else {
+      $requirements['mentions'] = [
+        'title' => t('CKEditor Mentions'),
+        'value' => t('Plugin not detected'),
+        'severity' => REQUIREMENT_ERROR,
+        'description' => t('Before you can use the CKEditor Mentions module, you need to download the mentions plugin from ckeditor.com and place it in /libraries/mentions. Check the README.txt for more information. <a href=":plugin_url">Get the plugin here</a>.', [':plugin_url' => 'https://ckeditor.com/cke4/addon/mentions']),
+      ];
+    }
+  }
+
+  return $requirements;
+}

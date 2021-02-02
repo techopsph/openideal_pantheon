@@ -1,0 +1,10 @@
+name: Avatar Kit Test
+type: module
+description: 'Test module for Avatar Kit.'
+package: Testing
+dependencies:
+  - avatars
+# Information added by Drupal.org packaging script on 2020-06-07
+version: '8.x-1.1'
+project: 'avatars'
+datestamp: 1591571092

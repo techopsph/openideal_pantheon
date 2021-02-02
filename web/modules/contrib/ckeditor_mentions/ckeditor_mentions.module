@@ -1,0 +1,82 @@
+<?php
+
+/**
+ * @file
+ * Custom code implementations for Ckeditor mentions.
+ */
+
+use Drupal\ckeditor_mentions\CKEditorMentionEvent;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * Implements hook_editor_js_settings_alter().
+ */
+function ckeditor_mentions_editor_js_settings_alter(&$settings) {
+
+  // Enables passing of data-mention attribute during entity save so that other
+  // modules can pick up on the value and react to it before it is stripped out.
+  if (isset($settings['editor']['formats'])) {
+    foreach ($settings['editor']['formats'] as $format => $data) {
+      if (isset($data['editorSettings']['extraPlugins']) && $data['editorSettings']['extraPlugins']) {
+        $plugins = explode(',', $data['editorSettings']['extraPlugins']);
+        if (in_array('mentions', $plugins)) {
+          $attributes = [];
+          if (isset($data['editorSettings']['allowedContent']['a']['attributes'])) {
+            $attributes = explode(',', $data['editorSettings']['allowedContent']['a']['attributes']);
+            $attributes[] = 'data-mention';
+          }
+          else {
+            $attributes[] = 'data-mention';
+          }
+          if (is_array($settings['editor']['formats'][$format]['editorSettings']['allowedContent'])) {
+            $settings['editor']['formats'][$format]['editorSettings']['allowedContent']['a']['attributes'] = implode(',', $attributes);
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function ckeditor_mentions_entity_update(EntityInterface $entity) {
+  $mentions = \Drupal::getContainer()->get('ckeditor_mentions.mention_event_dispatcher');
+  $mentions->dispatchMentionEvent($entity, CKEditorMentionEvent::MENTION_SUBSEQUENT);
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function ckeditor_mentions_entity_insert(EntityInterface $entity) {
+  $mentions = \Drupal::getContainer()->get('ckeditor_mentions.mention_event_dispatcher');
+  $mentions->dispatchMentionEvent($entity, CKEditorMentionEvent::MENTION_FIRST);
+}
+
+/**
+ * Implements hook_help().
+ */
+function ckeditor_mentions_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    case 'help.page.ckeditor_mentions':
+      $output = '';
+      $output .= '<h3>' . t('Ckeditor Mentions') . '</h3>';
+      $output .= '<p>' . t('The module adds a mentions support to the CKEditor.') . '</p>';
+      $output .= '<h3>' . t('Uses') . '</h3>';
+      $output .= '<dl>';
+      $output .= '<dt>' . t('Settings') . '</dt>';
+      $output .= '<dd>' . t('In the <a href=":text-formats">text formats</a> that use ckeditor, configure each text format that you want to add mentions support.', [':text-formats' => \Drupal::url('filter.admin_overview')]) . '</dd>';
+      $output .= '</dl>';
+      return $output;
+
+    default:
+  }
+}
+
+/**
+ * {@inheritdoc}
+ */
+function ckeditor_mentions_preprocess_html(&$variables) {
+  $variables['page']['#attached']['library'][] = 'ckeditor_mentions/ckeditor_mentions';
+}

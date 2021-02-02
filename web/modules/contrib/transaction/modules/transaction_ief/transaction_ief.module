@@ -1,0 +1,9 @@
+<?php
+
+use Drupal\transaction_ief\Form\TransactionInlineForm;
+
+function transaction_ief_entity_type_alter(array &$entity_types) {
+  if (isset($entity_types['transaction'])) {
+    $entity_types['transaction']->setHandlerClass('inline_form', TransactionInlineForm::class);
+  }
+}

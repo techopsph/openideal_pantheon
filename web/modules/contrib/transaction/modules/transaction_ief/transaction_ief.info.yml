@@ -1,0 +1,14 @@
+name: 'Transaction inline entity form'
+type: module
+description: 'Integration between transaction and inline entity form modules. Provides a widget to create new transactions from the target entity form.'
+package: Workflow
+core: 8.x
+core_version_requirement: ^8 || ^9
+dependencies:
+  - transaction:transaction
+  - inline_entity_form:inline_entity_form
+
+# Information added by Drupal.org packaging script on 2020-04-05
+version: '8.x-1.0-beta1'
+project: 'transaction'
+datestamp: 1586110410

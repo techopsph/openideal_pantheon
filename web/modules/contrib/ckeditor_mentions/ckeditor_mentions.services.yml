@@ -1,0 +1,4 @@
+services:
+  ckeditor_mentions.mention_event_dispatcher:
+    class: Drupal\ckeditor_mentions\MentionEventDispatcher
+    arguments: ['@current_user', '@config.factory', '@event_dispatcher']

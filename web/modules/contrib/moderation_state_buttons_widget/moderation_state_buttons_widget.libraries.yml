@@ -1,0 +1,13 @@
+widget:
+  version: VERSION
+  js:
+    libraries/widget/widget.js: {}
+  css:
+    theme:
+      libraries/widget/widget.css: {}
+view_widget:
+  version: VERSION
+  webpack: true
+  css:
+    theme:
+      libraries/view_widget/view_widget.css: {}

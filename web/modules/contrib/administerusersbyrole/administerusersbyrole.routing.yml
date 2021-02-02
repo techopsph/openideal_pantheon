@@ -1,0 +1,7 @@
+administerusersbyrole.settings:
+  path: '/admin/config/people/administerusersbyrole'
+  defaults:
+    _form: '\Drupal\administerusersbyrole\Form\SettingsForm'
+    _title: 'Administer Users by Role Settings'
+  requirements:
+    _permission: 'administer permissions'

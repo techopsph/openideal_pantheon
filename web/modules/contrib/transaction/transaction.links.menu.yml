@@ -1,0 +1,5 @@
+entity.transaction_type.collection:
+  title: 'Transaction types'
+  description: 'Administer the transaction types.'
+  parent: system.admin_config_workflow
+  route_name: entity.transaction_type.collection

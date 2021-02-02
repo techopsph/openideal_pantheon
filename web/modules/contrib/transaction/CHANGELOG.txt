@@ -1,0 +1,32 @@
+-- Transaction 8.x-1.0-beta1, 2020-04-05 --
+
+- Tests added, functional admin and kernel per transaction type
+- Compatibility with Drupal 9
+- Bug fixes
+
+-- Transaction 8.x-1.0-alpha4, 2019-01-18 --
+
+- Rules integration, with actions to get the last executed transaction, create
+  new transactions and execute transactions
+- Added transaction execution locking mechanism
+- Bug fixes
+
+-- Transaction 8.x-1.0-alpha3, 2018-03-06 --
+
+- Adds transaction execution options
+- Added service to get the last executed transaction, some other functions to
+  be added in the future
+- Transactor field processing refactoring
+- Integration with the Inline Entity Form module
+- Target entity local task settings moved to the transaction type entity type
+- Existing fields not in use by any bundle can be now referenced in transaction
+  types
+- Bug fixes
+
+-- Transaction 8.x-1.0-alpha2, 2018-02-15 --
+
+- Bug fixes
+
+-- Transaction 8.x-1.0-alpha1, 2018-02-09 --
+
+- Initial 8.x version

@@ -1,0 +1,35 @@
+main:
+  remote: RRSSB_LIBRARY_URI
+  license:
+    name: MIT
+    url: https://github.com/AdamPS/rrssb-plus/blob/master/LICENSE.md
+    gpl-compatible: TRUE
+  js:
+    /libraries/rrssb-plus/js/rrssb.min.js: { minified: TRUE }
+  css:
+    component:
+      /libraries/rrssb-plus/css/rrssb.css: {}
+
+init:
+  version: VERSION
+  js:
+    rrssb.init.js: {}
+  dependencies:
+    - rrssb/main
+    - core/jquery
+    - core/drupal
+    - core/drupalSettings
+
+nodetype:
+  version: VERSION
+  js:
+    rrssb.nodetype.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal
+
+demo:
+  version: VERSION
+  js:
+    rrssb.demo.js: {}
+

@@ -1,0 +1,14 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - transaction.type.userpoints_default_points
+  enforced:
+    module:
+      - userpoints_rules_example
+id: userpoints_rules_earn_on_content_post
+label: 'Earn points for content added'
+transaction_type: userpoints_default_points
+description: 'New content reward'
+details:
+  - 'For your post: [transaction:field_userpoints_default_linkref]'

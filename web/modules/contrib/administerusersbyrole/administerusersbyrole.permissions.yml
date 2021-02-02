@@ -1,0 +1,8 @@
+create users:
+  title: 'Create new users'
+access users overview:
+  title: 'Access the users overview page'
+allow empty user mail:
+  title: 'Allow empty user mail when managing users'
+permission_callbacks:
+  - Drupal\administerusersbyrole\AdministerusersbyrolePermissions::permissions

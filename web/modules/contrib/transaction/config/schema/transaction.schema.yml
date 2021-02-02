@@ -1,0 +1,74 @@
+# Schema for the configuration files of the transaction module.
+
+transaction.settings:
+  type: config_object
+  label: 'Transaction settings'
+  mapping:
+    tabs:
+      type: sequence
+      label: 'Local tasks on target entity types'
+      sequence:
+        type: string
+        label: 'Transaction tab'
+
+transaction.type.*:
+  type: config_entity
+  label: 'Transaction type'
+  mapping:
+    id:
+      type: string
+      label: 'Machine-readable name'
+    label:
+      type: label
+      label: 'Name'
+    target_entity_type:
+      type: string
+      label: 'Target entity type ID'
+    transactor:
+      type: mapping
+      label: 'Transactor'
+      mapping:
+        id:
+          type: string
+          label: 'Transactor ID'
+        settings:
+          type: sequence
+          label: 'Transactor settings'
+          sequence:
+            type: string
+            label: 'Settings value'
+    bundles:
+      type: sequence
+      label: 'Applicable target entity type bundles'
+      sequence:
+        type: string
+        label: 'Bundle ID'
+    options:
+      type: sequence
+      label: 'Transaction type options'
+      sequence:
+        type: string
+        label: 'Option value'
+
+transaction.operation.*:
+  type: config_entity
+  label: 'Transaction operation'
+  mapping:
+    id:
+      type: string
+      label: 'Machine-readable name'
+    label:
+      type: label
+      label: 'Name'
+    transaction_type:
+      type: string
+      label: 'The transaction type ID'
+    description:
+      type: text
+      label: 'Operation description template'
+    details:
+      type: sequence
+      label: 'Operation detail templates'
+      sequence:
+        type: text
+        label: 'Detail'

@@ -1,0 +1,91 @@
+rrssb.button_set.*:
+  type: config_entity
+  label: 'RRSSB button set'
+  mapping:
+    id:
+      type: string
+    label:
+      type: label
+      label: 'Label'
+    follow:
+      type: integer
+      label: 'Type of buttons'
+    chosen:
+      type: sequence
+      label: 'Chosen buttons'
+      sequence:
+        type: rrssb.button
+    appearance:
+      type: mapping
+      label: Appearance
+      mapping:
+        size:
+          type: float
+          label: Size
+        shrink:
+          type: float
+          label: Minimum size
+        regrow:
+          type: float
+          label: Extra row size
+        minRows:
+          type: float
+          label: Minimum rows
+        maxRows:
+          type: float
+          label: Maximum rows
+        prefixReserve:
+          type: float
+          label: Prefix reserved width
+        prefixHide:
+          type: float
+          label: Prefix maximum width
+        alignRight:
+          type: boolean
+          label: Right-align buttons
+    prefix:
+      type: label
+      label: 'Prefix text before the buttons'
+      translatable: true
+    image_tokens:
+      type: label
+      label: 'Tokens to use to find images'
+
+rrssb.settings:
+  type: config_object
+  mapping:
+    test:
+      type: boolean
+      label: 'Use debug version of libraries'
+
+node.type.*.third_party.rrssb:
+  type: config_object
+  label: 'RRSSB entity type settings'
+  mapping:
+    button_set:
+      type: string
+      label: 'RRSSB button set'
+
+block.settings.rrssb_block:
+  type: block_settings
+  label: 'RRSSB block'
+  mapping:
+    button_set:
+      type: string
+      label: 'RRSSB button set'
+
+rrssb.button:
+  type: mapping
+  mapping:
+    label:
+      type: label
+      label: 'Button'
+    enabled:
+      type: boolean
+      label: 'Enabled'
+    username:
+      type: label
+      label: 'Username'
+    weight:
+      type: integer
+      label: 'Weight'

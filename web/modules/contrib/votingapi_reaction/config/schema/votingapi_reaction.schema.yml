@@ -1,0 +1,32 @@
+field.formatter.settings.votingapi_reaction_default:
+  type: mapping
+  label: 'Voting API Reaction'
+  mapping:
+    show_summary:
+      type: boolean
+      label: 'Show reactions summary'
+    show_icon:
+      type: boolean
+      label: 'Show reaction icon'
+    show_label:
+      type: boolean
+      label: 'Show reaction label'
+    show_count:
+      type: boolean
+      label: 'Show reaction count'
+    sort_reactions:
+      type: string
+      label: 'Sort reactions'
+    reactions:
+      type: array
+      label: 'Reactions'
+votingapi.vote_type.*.third_party.votingapi_reaction:
+  type: mapping
+  label: 'Voting API Reaction'
+  mapping:
+    reaction:
+      type: boolean
+      label: 'Reaction'
+    icon:
+      type: string
+      label: 'Icon'

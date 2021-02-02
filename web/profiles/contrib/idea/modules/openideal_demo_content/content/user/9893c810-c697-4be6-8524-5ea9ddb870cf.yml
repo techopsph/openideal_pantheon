@@ -1,0 +1,72 @@
+_meta:
+  version: '1.0'
+  entity_type: user
+  uuid: 9893c810-c697-4be6-8524-5ea9ddb870cf
+  default_langcode: en
+  depends:
+    5917a325-20f3-422f-80e9-695ac76b06a2: file
+default:
+  preferred_langcode:
+    -
+      value: en
+  preferred_admin_langcode:
+    -
+      value: en
+  name:
+    -
+      value: yanivotesto4
+  pass:
+    -
+      value: $S$E4ncsQh4kd7ygLE7tveafelcgpJp26lGU6WijdN/oK8qSn0nWWRf
+      existing: ''
+      pre_hashed: false
+  mail:
+    -
+      value: yanivotesto4@gmail.com
+  timezone:
+    -
+      value: UTC
+  status:
+    -
+      value: true
+  created:
+    -
+      value: 1599684559
+  access:
+    -
+      value: 1599913860
+  login:
+    -
+      value: 1599686010
+  init:
+    -
+      value: yanivotesto4@gmail.com
+  avatars_user_picture:
+    -
+      entity: 5917a325-20f3-422f-80e9-695ac76b06a2
+      alt: ''
+      title: ''
+      width: 1024
+      height: 682
+  field_age_group:
+    -
+      value: 1990
+  field_first_name:
+    -
+      value: Edward
+  field_gender:
+    -
+      value: other
+  field_last_name:
+    -
+      value: ' Norton'
+  field_points:
+    -
+      value: '454.00'
+  user_picture:
+    -
+      entity: 5917a325-20f3-422f-80e9-695ac76b06a2
+      alt: ''
+      title: ''
+      width: 256
+      height: 256

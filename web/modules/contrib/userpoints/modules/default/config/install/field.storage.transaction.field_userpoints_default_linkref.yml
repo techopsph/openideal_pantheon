@@ -1,0 +1,25 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - dynamic_entity_reference
+    - transaction
+    - user
+  enforced:
+      module:
+        - userpoints_default
+id: transaction.field_userpoints_default_linkref
+field_name: field_userpoints_default_linkref
+entity_type: transaction
+type: dynamic_entity_reference
+settings:
+  exclude_entity_types: false
+  entity_type_ids:
+    user: user
+module: dynamic_entity_reference
+locked: false
+cardinality: 1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false

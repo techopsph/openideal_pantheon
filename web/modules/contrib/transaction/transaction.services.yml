@@ -1,0 +1,20 @@
+services:
+  transaction:
+    class: Drupal\transaction\TransactionService
+    arguments: ['@entity_type.manager']
+
+  plugin.manager.transaction.transactor:
+    class: Drupal\transaction\TransactorPluginManager
+    arguments: ['@container.namespaces', '@cache.discovery', '@module_handler']
+
+  transaction.route_subscriber:
+    class: Drupal\transaction\Routing\RouteSubscriber
+    arguments: ['@entity_type.manager']
+    tags:
+      - { name: event_subscriber }
+
+  transaction.applicable_transaction_access:
+    class: Drupal\transaction\Access\ApplicableTransactionAccess
+    arguments: ['@current_route_match', '@request_stack', '@entity_type.manager']
+    tags:
+      - { name: access_check, applies_to: _applicable_transaction_type }

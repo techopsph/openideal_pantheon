@@ -1,0 +1,31 @@
+id: default
+label: Default
+follow: 0
+chosen:
+  email:
+    enabled: TRUE
+    weight: -20
+  facebook:
+    enabled: TRUE
+    weight: -19
+  linkedin:
+    enabled: TRUE
+    weight: -18
+  twitter:
+    enabled: TRUE
+    weight: -17
+  pinterest:
+    enabled: TRUE
+    weight: -15
+appearance:
+  size: null
+  shrink: null
+  regrow: null
+  minRows: null
+  maxRows: null
+  prefixReserve: null
+  prefixHide: null
+  alignRight: false
+prefix: ''
+image_tokens: ''
+test: FALSE

@@ -1,0 +1,4 @@
+services:
+  moderation_state_buttons_widget.info:
+    class: Drupal\moderation_state_buttons_widget\ModerationStateButtonsWidgetInfo
+    arguments: ['@content_moderation.moderation_information', '@entity_type.manager', '@entity_type.bundle.info', '@content_moderation.state_transition_validation', '@current_user']

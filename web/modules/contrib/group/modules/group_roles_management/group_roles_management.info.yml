@@ -1,0 +1,8 @@
+name: 'Group roles management'
+type: module
+description: 'Allows to set permissions to manage members of specific role.'
+core_version_requirement: ^8.8 || ^9
+package: 'Group'
+php: 7.1
+dependencies:
+  - drupal:group

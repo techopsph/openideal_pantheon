@@ -1,0 +1,9 @@
+ckeditor_mentions.ajax_callback:
+  path: '/ckeditor-mentions/ajax/{match}'
+  defaults:
+    _controller: 'Drupal\ckeditor_mentions\Controller\CKMentionsController::getRealNameMatch'
+    _title: 'Retrieve realname match'
+    match: ''
+  methods: [GET]
+  requirements:
+    _permission: 'use inline mentions'

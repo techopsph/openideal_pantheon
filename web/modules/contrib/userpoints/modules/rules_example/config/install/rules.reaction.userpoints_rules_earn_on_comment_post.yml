@@ -1,0 +1,75 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - transaction.operation.userpoints_rules_earn_on_comment_post
+  enforced:
+      module:
+        - userpoints_rules_example
+id: userpoints_rules_earn_on_comment_post
+label: 'Earn points for posting a comment'
+events:
+  -
+    event_name: 'rules_entity_insert:comment'
+description: 'Grant some points to comment authors.'
+tags:
+  - userpoints
+  - example
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: 21b7d737-b901-4fed-810c-8d9308fa52a7
+  conditions:
+    id: rules_and
+    uuid: c4491c29-b503-4435-8f66-0ba018dcba78
+    conditions: {  }
+  actions:
+    id: rules_action_set
+    uuid: 78b8c06b-60ac-4c28-83ca-35f101804eb2
+    actions:
+      -
+        id: rules_action
+        uuid: a83fd5e0-8837-4b7e-b075-3a611ab2d797
+        context_values:
+          transaction_type_id: userpoints_default_points
+          operation_id: userpoints_rules_earn_on_comment_post
+          transaction_field_amount: '5'
+          transaction_field_balance: '0'
+          transaction_field_log_message: ''
+        context_mapping:
+          target_entity: comment.uid.entity
+        context_processors:
+          transaction_type_id:
+            rules_tokens: {  }
+          operation_id:
+            rules_tokens: {  }
+          transaction_field_amount:
+            rules_tokens: {  }
+          transaction_field_balance:
+            rules_tokens: {  }
+          transaction_field_log_message:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: 'transaction_create:userpoints'
+      -
+        id: rules_action
+        uuid: 5afc896f-b9eb-4674-899a-923cb6011b98
+        context_values: {  }
+        context_mapping:
+          data: transaction.field_userpoints_default_linkref
+          value: comment
+        context_processors: {  }
+        provides_mapping: {  }
+        action_id: rules_data_set
+      -
+        id: rules_action
+        uuid: 465d180f-a7f2-4530-96ec-feca7d855549
+        context_values:
+          immediate: ''
+        context_mapping:
+          transaction: transaction
+        context_processors:
+          immediate:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: transaction_execute

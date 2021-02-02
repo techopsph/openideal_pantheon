@@ -1,0 +1,5 @@
+entity.rrssb_button_set.add_form:
+  route_name: 'entity.rrssb_button_set.add_form'
+  title: 'Add RRSSB Button Set'
+  appears_on:
+    - entity.rrssb_button_set.collection

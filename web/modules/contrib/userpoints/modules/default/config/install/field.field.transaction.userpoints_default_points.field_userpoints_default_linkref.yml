@@ -1,0 +1,30 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.transaction.field_userpoints_default_linkref
+    - transaction.type.userpoints_default_points
+  module:
+    - dynamic_entity_reference
+id: transaction.userpoints_default_points.field_userpoints_default_linkref
+field_name: field_userpoints_default_linkref
+entity_type: transaction
+bundle: userpoints_default_points
+label: Reference
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  user:
+    handler: 'default:user'
+    handler_settings:
+      include_anonymous: true
+      filter:
+        type: _none
+      target_bundles: null
+      sort:
+        field: _none
+      auto_create: false
+field_type: dynamic_entity_reference

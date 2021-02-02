@@ -1,0 +1,13 @@
+<div class="votingapi-reaction-item-wrapper">
+  <div class="votingapi-reaction-item">
+    {% if icon %}
+      <img class="votingapi-reaction-image" src="{{ icon }}" />
+    {% endif %}
+    {% if label %}
+      <span class="votingapi-reaction-label">{{ label }}</span>
+    {% endif %}
+  </div>
+  {% if count is not empty %}
+    <div class="votingapi-reaction-count">{{ count }}</div>
+  {% endif %}
+</div>

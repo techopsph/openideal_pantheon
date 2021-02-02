@@ -1,0 +1,96 @@
+/* 
+Theme Name: Bootstrap 4 Sass
+Description: Bootstrap 4 with Sass
+*/
+
+// import files
+@import "import";
+
+/* GENERAL STYLES
+-------------------------------------------------*/
+html {
+  font-size: 16px;
+}
+
+body {
+  padding: 0;
+  color: $primary-color;
+  margin: 0;
+  min-height: 100vh;
+  background-color: $body-bg;
+}
+
+.main-content {
+  min-height: 100vh;
+}
+
+/* COLORS 
+--------------------------------------------------*/
+
+a {
+  color: $accent-shade;
+}
+
+.bg-inverse {
+  background: $primary-shade;
+}
+
+.menu--main li a {
+  color: $white;
+}
+
+.menu--account li a {
+  color: $white;
+}
+
+.site-name-slogan a {
+  text-decoration: none;
+}
+
+.card-group img {
+  margin: 0;
+  width: 100%;
+  height: auto;
+}
+
+.card-group .field--type-image {
+  margin: 0
+}
+
+.slick {
+  width: 100%;
+}
+
+.slick > div {
+  margin: 0 15px;
+}
+
+.color-white {
+  color: $white !important;
+}
+
+.pswp.pswp-hidden {
+  display: none;
+}
+
+blockquote {
+  background: #f9f9f9;
+  border-left: 10px solid #ccc;
+  margin: 1.5em 10px;
+  padding: 0.5em 10px;
+  quotes: "\201C""\201D""\2018""\2019";
+}
+
+blockquote:before {
+  color: #ccc;
+  content: open-quote;
+  font-size: 4em;
+  line-height: 0.1em;
+  margin-right: 0.25em;
+  vertical-align: -0.4em;
+}
+
+blockquote p {
+  display: inline;
+  font-family: auto;
+}

@@ -1,0 +1,10 @@
+type: module
+name: Unlimited Number
+description: Provides a render element and a widget for number fields.
+core_version_requirement: ^8.9 || ^9
+php: 7.1
+package: Fields
+# Information added by Drupal.org packaging script on 2020-06-04
+version: '2.0.1'
+project: 'unlimited_number'
+datestamp: 1591235087

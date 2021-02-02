@@ -1,0 +1,36 @@
+{
+  "name": "drupal/transaction",
+  "description": "Transactional operations over entities.",
+  "type": "drupal-module",
+  "license": "GPL-2.0+",
+  "minimum-stability": "dev",
+  "homepage": "https://www.drupal.org/project/transaction",
+  "keywords": ["Drupal", "transaction", "accounting"],
+  "authors": [
+    {
+      "name": "Manuel Adan (manuel.adan)",
+      "homepage": "https://www.drupal.org/u/manueladan",
+      "role": "Maintainer"
+    },
+    {
+      "name": "See other contributors",
+      "homepage": "https://www.drupal.org/node/295403/committers"
+    }
+  ],
+  "support": {
+    "issues": "https://www.drupal.org/project/issues/transaction",
+    "irc": "irc://irc.freenode.org/drupal-contribute",
+    "source": "http://cgit.drupalcode.org/transaction"
+  },
+  "require": {
+    "drupal/dynamic_entity_reference": "^1.0"
+  },
+  "require-dev": {
+    "drupal/token": "^1.6"
+  },
+  "suggest": {
+    "drupal/token": "Provides additional tokens not supported by core (most notably fields), as well as a UI for browsing tokens.",
+    "drupal/userpoints": "Provides a point system for users, letting to gain or lose points for performing certain actions on your site.",
+    "drupal/transaction_workflow": "Light weight multipurpose workflow manager for any entity type."
+  }
+}

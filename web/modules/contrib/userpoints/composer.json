@@ -1,0 +1,55 @@
+{
+  "name": "drupal/userpoints",
+  "description": "Provides a point system for users, letting to gain or lose points for performing certain actions on your site.",
+  "type": "drupal-module",
+  "license": "GPL-2.0+",
+  "minimum-stability": "dev",
+  "homepage": "https://www.drupal.org/project/userpoints",
+  "keywords": ["Drupal", "user points", "community", "user management"],
+  "authors": [
+    {
+      "name": "Manuel Adan (manuel.adan)",
+      "homepage": "https://www.drupal.org/u/manueladan",
+      "role": "Maintainer"
+    },
+    {
+      "name": "Sascha Grossenbacher (Berdir)",
+      "homepage": "https://www.drupal.org/u/berdir",
+      "role": "Maintainer"
+    },
+    {
+      "name": "Khalid Baheyeldin (kbahey)",
+      "homepage": "https://www.drupal.org/u/kbahey",
+      "role": "Maintainer"
+    },
+    {
+      "name": "Jacob Redding (jredding)",
+      "homepage": "https://www.drupal.org/u/jredding",
+      "role": "Maintainer"
+    },
+    {
+      "name": "wafaa (wafaa)",
+      "homepage": "https://www.drupal.org/u/wafaa",
+      "role": "Maintainer"
+    },
+    {
+      "name": "See other contributors",
+      "homepage": "https://www.drupal.org/node/25406/committers"
+    }
+  ],
+  "support": {
+    "issues": "https://www.drupal.org/project/issues/userpoints",
+    "irc": "irc://irc.freenode.org/drupal-contribute",
+    "source": "http://cgit.drupalcode.org/userpoints"
+  },
+  "require": {
+    "drupal/core": "^8 || ^9",
+    "drupal/transaction": "^1.0.0-alpha4"
+  },
+  "require-dev": {
+    "drupal/token": "^1.6"
+  },
+  "suggest": {
+    "drupal/points": "Define point entity type and its associated functionalities."
+  }
+}

@@ -1,0 +1,49 @@
+<?php
+
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\transaction\TransactionInterface;
+
+/**
+ * Implements hook_field_formatter_info_alter().
+ */
+function transaction_field_formatter_info_alter(array &$info) {
+  $info['string']['field_types'][] = 'transaction_description';
+  $info['string']['field_types'][] = 'transaction_details';
+}
+
+/**
+ * Implements hook_entity_type_alter().
+ */
+function transaction_entity_type_alter(array &$entity_types) {
+  /** @var \Drupal\Core\Entity\EntityTypeInterface[] $entity_types */
+
+  // Set a link template in the target entity type to the transaction
+  // collection for generic based transaction types.
+  $tabs = \Drupal::config('transaction.settings')->get('tabs') ? : [];
+  foreach ($tabs as $tab) {
+    list($transaction_type_id, $target_entity_type_id) = explode('-', $tab);
+    $entity_types[$target_entity_type_id]->setLinkTemplate("transaction-$transaction_type_id", "/transaction/$transaction_type_id/$target_entity_type_id/{{$target_entity_type_id}}");
+  }
+}
+
+/**
+ * Implements hook_inline_entity_form_entity_form_alter().
+ *
+ * Provides basic integration with the inline_entity_form module. For full
+ * integration, enable the transaction_ief submodule.
+ */
+function transaction_inline_entity_form_entity_form_alter(array $entity_form, FormStateInterface $form_state) {
+  // Transaction IEF submodule makes this better.
+  if (\Drupal::moduleHandler()->moduleExists('transaction_ief')) {
+    return $entity_form;
+  }
+
+  // Set the target entity type in the transaction if not set.
+  $entity = $entity_form['#entity'];
+  if ($entity instanceof TransactionInterface
+    && !$entity->getTargetEntityId()) {
+    $entity->setTargetEntity(\Drupal::request()->get($entity->getType()->getTargetEntityTypeId()));
+  }
+
+  return $entity_form;
+}

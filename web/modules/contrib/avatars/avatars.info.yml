@@ -1,0 +1,16 @@
+name: Avatar Kit
+type: module
+description: 'Provides a selection of generated avatars for users.'
+package: Avatars
+core_version_requirement: ^8.8 || ^9
+dependencies:
+  - user
+  - file
+  - field
+  - image
+  - options
+  - unlimited_number
+# Information added by Drupal.org packaging script on 2020-06-07
+version: '8.x-1.1'
+project: 'avatars'
+datestamp: 1591571092

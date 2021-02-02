@@ -1,0 +1,21 @@
+{
+  "name": "drupal/unlimited_number",
+  "description": "Provides a render element and a widget for number fields.",
+  "type": "drupal-module",
+  "homepage": "http://drupal.org/project/unlimited_number",
+  "support": {
+    "issues": "https://github.com/dpi/unlimited_number/issues",
+    "source": "https://github.com/dpi/unlimited_number"
+  },
+  "authors": [
+    {
+      "name": "Daniel Phin",
+      "homepage": "http://danielph.in",
+      "role": "Maintainer"
+    }
+  ],
+  "license": "GPL-2.0+",
+  "require": {
+    "drupal/core": "^8.9 || ^9"
+  }
+}

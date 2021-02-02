@@ -1,0 +1,171 @@
+entity.transaction_type.collection:
+  path: '/admin/config/workflow/transaction'
+  defaults:
+    _entity_list: 'transaction_type'
+    _title: 'Transaction types'
+  requirements:
+    _permission: 'administer transaction types'
+
+transaction.transaction_type_creation:
+  path: '/admin/config/workflow/transaction/add'
+  defaults:
+    _form: '\Drupal\transaction\Form\TransactionTypeCreationForm'
+    _title: 'Add transaction type'
+  requirements:
+    _permission: 'administer transaction types'
+
+entity.transaction_type.add_form:
+  path: '/admin/config/workflow/transaction/add/{target_entity_type}/{transactor}'
+  defaults:
+    _entity_form: 'transaction_type.add'
+    _title: 'Add transaction type'
+  requirements:
+    _permission: 'administer transaction types'
+
+entity.transaction_type.edit_form:
+  path: '/admin/config/workflow/transaction/edit/{transaction_type}'
+  defaults:
+    _entity_form: 'transaction_type.edit'
+    _title_callback: '\Drupal\Core\Entity\Controller\EntityController::title'
+  requirements:
+    _permission: 'administer transaction types'
+
+entity.transaction_type.delete_form:
+  path: '/admin/config/workflow/transaction/delete/{transaction_type}'
+  defaults:
+    _entity_form: 'transaction_type.delete'
+    _title: 'Delete'
+  requirements:
+    _entity_access: 'transaction_type.delete'
+
+entity.transaction_operation.collection:
+  path: '/admin/config/workflow/transaction/edit/{transaction_type}/operation'
+  defaults:
+    _entity_list: 'transaction_operation'
+    _title: 'Transaction operations'
+  requirements:
+    _entity_access: 'transaction_type.edit'
+  options:
+    parameters:
+      transaction_type:
+        type: entity:transaction_type
+
+entity.transaction_operation.add_form:
+  path: '/admin/config/workflow/transaction/edit/{transaction_type}/operation/add'
+  defaults:
+    _entity_form: 'transaction_operation.add'
+    _title: 'Add transaction operation'
+  requirements:
+    _entity_access: 'transaction_type.edit'
+  options:
+    parameters:
+      transaction_type:
+        type: entity:transaction_type
+
+entity.transaction_operation.edit_form:
+  path: '/admin/config/workflow/transaction/operation/{transaction_operation}'
+  defaults:
+    _entity_form: 'transaction_operation.edit'
+    _title_callback: '\Drupal\Core\Entity\Controller\EntityController::title'
+  requirements:
+    _entity_access: 'transaction_operation.edit'
+  options:
+    parameters:
+      transaction_type:
+        type: entity:transaction_type
+
+entity.transaction_operation.delete_form:
+  path: '/admin/config/workflow/transaction/operation/{transaction_operation}/delete'
+  defaults:
+    _entity_form: 'transaction_operation.delete'
+    _title: 'Delete transaction operation'
+  requirements:
+    _entity_access: 'transaction_operation.delete'
+  options:
+    parameters:
+      transaction_type:
+        type: entity:transaction_type
+
+entity.transaction.collection:
+  path: '/transaction/{transaction_type}/{target_entity_type}/{target_entity}'
+  defaults:
+    _entity_list: 'transaction'
+    _title: 'Transactions'
+    _title_callback: '\Drupal\transaction\Controller\TransactionController::transactionCollectionTitle'
+  requirements:
+    _permission: 'administer transactions'
+    _entity_access: 'target_entity.view'
+    target_entity: \d+
+    _applicable_transaction_type: 'TRUE'
+  options:
+    _admin_route: TRUE
+    parameters:
+      transaction_type:
+        type: entity:transaction_type
+      target_entity:
+        type: entity:{target_entity_type}
+
+entity.transaction.add_form:
+  path: '/transaction/add/{transaction_type}/{target_entity_type}/{target_entity}'
+  defaults:
+    _entity_form: 'transaction.add'
+    _title: 'Create transaction'
+    _title_callback: '\Drupal\transaction\Controller\TransactionController::transactionAddTitle'
+  requirements:
+    _entity_create_access: 'transaction:{transaction_type}'
+    _entity_access: 'target_entity.view'
+    target_entity: \d+
+    _applicable_transaction_type: 'TRUE'
+  options:
+    _admin_route: TRUE
+    parameters:
+      transaction_type:
+        type: entity:transaction_type
+      target_entity:
+        type: entity:{target_entity_type}
+
+entity.transaction.canonical:
+  path: '/transaction/{transaction}'
+  defaults:
+    _entity_view: 'transaction.default'
+    _title: 'Transaction'
+    _title_callback: '\Drupal\Core\Entity\Controller\EntityController::title'
+  requirements:
+    _entity_access: 'transaction.view'
+    transaction: \d+
+  options:
+    _admin_route: TRUE
+
+entity.transaction.edit_form:
+  path: '/transaction/{transaction}/edit'
+  defaults:
+    _entity_form: 'transaction.edit'
+    _title: 'Edit transaction'
+    _title_callback: '\Drupal\Core\Entity\Controller\EntityController::editTitle'
+  requirements:
+    _entity_access: 'transaction.edit'
+    transaction: \d+
+  options:
+    _admin_route: TRUE
+
+entity.transaction.delete_form:
+  path: '/transaction/{transaction}/delete'
+  defaults:
+    _entity_form: 'transaction.delete'
+    _title: 'Delete transaction'
+  requirements:
+    _entity_access: 'transaction.delete'
+    transaction: \d+
+  options:
+    _admin_route: TRUE
+
+entity.transaction.execute_form:
+  path: '/transaction/{transaction}/execute'
+  defaults:
+    _entity_form: 'transaction.execute'
+    _title: 'Execute transaction'
+  requirements:
+    _entity_access: 'transaction.execute'
+    transaction: \d+
+  options:
+    _admin_route: TRUE

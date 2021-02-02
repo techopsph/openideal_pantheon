@@ -1,0 +1,5 @@
+ckeditor_mentions:
+  version: VERSION
+  css:
+    layout:
+      css/plugins/mentions/ckeditor_mentions.css: {}

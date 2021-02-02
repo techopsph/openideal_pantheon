@@ -1,0 +1,4 @@
+services:
+  votingapi_reaction.manager:
+    class: Drupal\votingapi_reaction\VotingApiReactionManager
+    arguments: ['@entity_type.manager', '@current_user', '@plugin.manager.votingapi.resultfunction', '@renderer', '@config.factory']

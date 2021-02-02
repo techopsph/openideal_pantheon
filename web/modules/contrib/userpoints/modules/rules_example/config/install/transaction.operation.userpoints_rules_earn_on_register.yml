@@ -1,0 +1,13 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - transaction.type.userpoints_default_points
+  enforced:
+    module:
+      - userpoints_rules_example
+id: userpoints_rules_earn_on_register
+label: 'Earn points on user register'
+transaction_type: userpoints_default_points
+description: 'Sign-up reward'
+details: {  }

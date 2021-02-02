@@ -1,0 +1,57 @@
+fivestar:
+  version: VERSION
+  js:
+    js/fivestars.js : {}
+  css:
+    theme:
+      https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css: {}
+      css/fivestar.css: {}
+  dependencies:
+    - core/jquery
+    - core/drupal
+    - votingapi_widgets/fontawesome
+    - votingapi_widgets/barrating
+
+fontawesome:
+  css:
+    theme:
+      https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css: {}
+
+barrating:
+  js:
+    /libraries/jquery-bar-rating/dist/jquery.barrating.min.js: { minified: true }
+  css:
+    theme:
+      /libraries/jquery-bar-rating/dist/themes/css-stars.css: {}
+      /libraries/jquery-bar-rating/dist/themes/bars-square.css: {}
+      /libraries/jquery-bar-rating/dist/themes/bars-pill.css: {}
+      /libraries/jquery-bar-rating/dist/themes/bars-movie.css: {}
+      /libraries/jquery-bar-rating/dist/themes/bars-horizontal.css: {}
+      /libraries/jquery-bar-rating/dist/themes/fontawesome-stars.css: {}
+      /libraries/jquery-bar-rating/dist/themes/fontawesome-stars-o.css: {}
+      /libraries/jquery-bar-rating/dist/themes/bars-reversed.css: {}
+      /libraries/jquery-bar-rating/dist/themes/bootstrap-stars.css: {}
+
+useful:
+  version: VERSION
+  js:
+    js/useful.js : {}
+  css:
+    theme:
+      css/useful.css: {}
+  dependencies:
+    - core/jquery
+    - core/drupal
+    - votingapi_widgets/fontawesome
+
+like:
+  version: VERSION
+  js:
+    js/like.js : {}
+  css:
+    theme:
+      css/like.css: {}
+  dependencies:
+    - core/jquery
+    - core/drupal
+    - votingapi_widgets/fontawesome

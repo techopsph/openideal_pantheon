@@ -1,0 +1,26 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - route_condition
+  theme:
+    - openideal_theme
+id: openideal_theme_local_tasks
+theme: openideal_theme
+region: content
+weight: -13
+provider: null
+plugin: local_tasks_block
+settings:
+  id: local_tasks_block
+  label: Tabs
+  provider: core
+  label_display: '0'
+  primary: true
+  secondary: true
+visibility:
+  route:
+    id: route
+    routes: "entity.user.canonical\r\nuser.login\r\nuser.logout\r\nuser.register\r\nuser.pass"
+    negate: true
+    context_mapping: {  }

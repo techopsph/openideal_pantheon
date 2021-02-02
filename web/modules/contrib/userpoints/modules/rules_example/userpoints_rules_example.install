@@ -1,0 +1,19 @@
+<?php
+
+/**
+ * Implements hook_install().
+ */
+function userpoints_rules_example_install() {
+  $config_factory = \Drupal::configFactory();
+
+  // Ensure that node and comment entity types are allowed by the entity
+  // reference link field in the default user points transaction type.
+  foreach ($config_factory->listAll('field.storage.transaction.field_userpoints_default_linkref') as $linkref_config_name) {
+    $linkref_field_config = $config_factory->getEditable($linkref_config_name);
+    $linkref_field_settings = $linkref_field_config->get('settings');
+    $linkref_field_settings['entity_type_ids']['node'] = 'node';
+    $linkref_field_settings['entity_type_ids']['comment'] = 'comment';
+    $linkref_field_config->set('settings', $linkref_field_settings);
+    $linkref_field_config->save(TRUE);
+  }
+}

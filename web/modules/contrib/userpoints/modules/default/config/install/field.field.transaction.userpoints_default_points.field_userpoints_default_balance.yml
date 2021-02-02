@@ -1,0 +1,22 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.transaction.field_userpoints_default_balance
+    - transaction.type.userpoints_default_points
+id: transaction.userpoints_default_points.field_userpoints_default_balance
+field_name: field_userpoints_default_balance
+entity_type: transaction
+bundle: userpoints_default_points
+label: Balance
+description: ''
+required: true
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  min: null
+  max: null
+  prefix: ''
+  suffix: ''
+field_type: decimal

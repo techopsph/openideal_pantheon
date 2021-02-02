@@ -1,0 +1,75 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - transaction.operation.userpoints_rules_earn_on_content_update
+  enforced:
+    module:
+      - userpoints_rules_example
+id: userpoints_rules_earn_on_content_update
+label: 'Earn points for updating content'
+events:
+  -
+    event_name: 'rules_entity_update:node'
+description: 'Grant some points to content editors.'
+tags:
+  - userpoints
+  - example
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: 814241d1-d49f-4234-b112-7b39b1c5dc68
+  conditions:
+    id: rules_and
+    uuid: e8d7bd44-e159-4296-9cbb-a6e919a366c5
+    conditions: {  }
+  actions:
+    id: rules_action_set
+    uuid: 81320145-99b9-45c6-87fd-36f44ac7236d
+    actions:
+      -
+        id: rules_action
+        uuid: d2fb7e58-f1cd-4af1-b27c-5763c7a43ea2
+        context_values:
+          transaction_type_id: userpoints_default_points
+          operation_id: userpoints_rules_earn_on_content_update
+          transaction_field_amount: '10'
+          transaction_field_balance: '0'
+          transaction_field_log_message: ''
+        context_mapping:
+          target_entity: '@user.current_user_context:current_user'
+        context_processors:
+          transaction_type_id:
+            rules_tokens: {  }
+          operation_id:
+            rules_tokens: {  }
+          transaction_field_amount:
+            rules_tokens: {  }
+          transaction_field_balance:
+            rules_tokens: {  }
+          transaction_field_log_message:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: 'transaction_create:userpoints'
+      -
+        id: rules_action
+        uuid: 0d0256a6-9f9f-4d88-8b76-0b4121756db8
+        context_values: {  }
+        context_mapping:
+          data: transaction.field_userpoints_default_linkref
+          value: node
+        context_processors: {  }
+        provides_mapping: {  }
+        action_id: rules_data_set
+      -
+        id: rules_action
+        uuid: c85a60bd-6441-4028-ad18-ad3f9547b87d
+        context_values:
+          immediate: ''
+        context_mapping:
+          transaction: transaction
+        context_processors:
+          immediate:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: transaction_execute

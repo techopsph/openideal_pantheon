@@ -1,0 +1,46 @@
+.site-navigation-toggle {
+  background-color: #242A36;
+  position: relative;
+  .sidebar-collapse-button {
+    position: absolute;
+    top: 25%;
+    left: 2%;
+  }
+  .site-navigation--logo {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+  }
+  .site-navigation--link {
+    display: flex;
+    margin: 0;
+    padding: 0;
+  }
+
+  .site-branding {
+    &--name {
+      font-style: normal;
+      font-weight: normal;
+      font-size: 13px;
+      line-height: 17px;
+      display: flex;
+      align-items: center;
+    }
+
+    &--link {
+      display: flex;
+      flex-direction: row;
+      font-size: 13px;
+      margin: 15px;
+      color: $white;
+    }
+  }
+
+  .site-notification-collapse-button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    right: 15px;
+  }
+}

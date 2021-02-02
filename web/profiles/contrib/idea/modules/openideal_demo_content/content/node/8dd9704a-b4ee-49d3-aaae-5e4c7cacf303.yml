@@ -1,0 +1,99 @@
+_meta:
+  version: '1.0'
+  entity_type: node
+  uuid: 8dd9704a-b4ee-49d3-aaae-5e4c7cacf303
+  bundle: challenge
+  default_langcode: en
+  depends:
+    ca579e5f-758f-4ec0-89ee-1e5a42a6d2e7: user
+    ee947b15-b787-4d99-ad8f-b72c9745225e: file
+    45407fb8-f6ae-4476-81a6-e85146a0d608: file
+    3b54dac2-8e12-44d5-828d-0d619004426f: file
+    3071c5c0-1317-4c48-90a3-8dbfbfba4d1c: file
+    de04ad22-da8b-4515-ae83-7412673ba7fc: file
+    8c01e600-9ec4-45ef-8515-f8391085482d: file
+default:
+  revision_uid:
+    -
+      target_id: 1
+  status:
+    -
+      value: true
+  uid:
+    -
+      entity: ca579e5f-758f-4ec0-89ee-1e5a42a6d2e7
+  title:
+    -
+      value: 'Bose is almost ready to challenge Apple’s AirPods Pro with new noise-canceling earbuds'
+  created:
+    -
+      value: 1599683090
+  promote:
+    -
+      value: true
+  sticky:
+    -
+      value: false
+  revision_translation_affected:
+    -
+      value: true
+  content_translation_source:
+    -
+      value: und
+  content_translation_outdated:
+    -
+      value: false
+  body:
+    -
+      value: "<p>Bose hasn’t released a pair of true wireless earbuds since the SoundSport Free in 2017, but it seems the company is about to make up for lost time. Last year, Bose said it was readying&nbsp;<em>two</em>&nbsp;sets of new earbuds — the Noise Canceling Earbuds 500 and 700,&nbsp;<a href=\"https://www.anrdoezrs.net/links/8532386/type/am/sid/verge/https://www.bose.com/en_us/better_with_bose/new-headphones.html\">still listed on this website</a>&nbsp;— and a new video suggests the launch of at least one of those could be imminent. Bose has apparently reconsidered its branding choices and is reverting back to its signature “QuietComfort” series: the Noise Canceling Headphones 700 are now simply called the Bose QuietComfort Earbuds. Seems like the right decision to me.</p>\r\n\r\n<p>The QuietComfort Earbuds will offer “the world’s most effective noise cancelling” backed by crisp audio with deep bass, thanks to “breakthrough acoustic innovations.” This is the sort of language that Bose always uses for new products, but there’s no company more closely tied to noise cancellation technology than Bose. The QuietComfort Earbuds will include the company’s StayHear Max tips (with an integrated stability arc) and are confirmed to be sweat and water resistant.</p>\r\n"
+      format: basic_html_with_embedded_video
+      summary: "The QuietComfort Earbuds have appeared on a retailer’s website\r\n\r\n"
+  field_comments:
+    -
+      status: 2
+      cid: 0
+      last_comment_timestamp: 1599684166
+      last_comment_name: ''
+      last_comment_uid: 34
+      comment_count: 0
+  field_images:
+    -
+      entity: ee947b15-b787-4d99-ad8f-b72c9745225e
+      alt: ''
+      title: ''
+      width: 740
+      height: 600
+    -
+      entity: 45407fb8-f6ae-4476-81a6-e85146a0d608
+      alt: ''
+      title: ''
+      width: 600
+      height: 600
+    -
+      entity: 3b54dac2-8e12-44d5-828d-0d619004426f
+      alt: ''
+      title: ''
+      width: 500
+      height: 500
+  field_is_open:
+    -
+      value: true
+  field_like:
+    -
+      status: 2
+  field_schedule_close:
+    -
+      value: 1606344102
+  field_supporting_data:
+    -
+      entity: 3071c5c0-1317-4c48-90a3-8dbfbfba4d1c
+      display: false
+      description: ''
+    -
+      entity: de04ad22-da8b-4515-ae83-7412673ba7fc
+      display: false
+      description: ''
+    -
+      entity: 8c01e600-9ec4-45ef-8515-f8391085482d
+      display: false
+      description: ''

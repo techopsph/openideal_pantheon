@@ -1,0 +1,11 @@
+-- User Points 8.x-1.0-beta1, 2020-08-18 --
+
+- Adds tests
+- Drupal 9 compatibility
+
+-- User Points 8.x-1.0-alpha1, 2019-01-22 --
+
+- Initial 8.x version
+- Default sub-module, for a user points system that mimics the 7.x branch
+- Rules example sub-module, earn / loss points on user login, register, add
+  or edit contents and posting comments

@@ -1,0 +1,476 @@
+<?php
+
+/**
+ * @file
+ * Module file for Ridiculously Responsive Social Share Buttons.
+ */
+
+require 'rrssb.config.inc';
+
+use Drupal\Component\Utility\Html;
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\File\FileSystemInterface;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\node\Entity\NodeType;
+use Drupal\node\NodeTypeInterface;
+use Drupal\Core\Render\BubbleableMetadata;
+use Drupal\Core\Render\Markup;
+
+const RRSSB_DEFAULT_IMAGE_TOKEN = '[node:field_image:url]|[rrssbsite:logo-url]';
+
+/**
+ * Implements hook_tokens().
+ *
+ * These tokens are not advertised in hook_token_info because they are of no
+ * use outside this module.
+ */
+function rrssb_tokens($type, $tokens, array $data = [], array $options = [], BubbleableMetadata $bubbleable_metadata) {
+  $replacements = [];
+  $urlencode = isset($options['urlencode']);
+
+  if ($type == 'rrssb' && !empty($data['rrssb'])) {
+    foreach ($tokens as $name => $original) {
+      if (isset($data['rrssb'][$name])) {
+        $replacements[$original] = $data['rrssb'][$name];
+        if ($urlencode) {
+          // URL encode, and create a markup object to prevent the token replacement from escaping a second time.
+          $replacements[$original] = Markup::create(rawurlencode($replacements[$original]));
+        }
+      }
+    }
+  }
+
+  // This issue https://www.drupal.org/node/2842780 has a patch to add site:logo.
+  // In the meantime, add our own version.
+  if ($type == 'rrssbsite') {
+    foreach ($tokens as $name => $original) {
+      switch ($name) {
+        case 'logo-url':
+          if ($logo = theme_get_setting('logo')) {
+            global $base_url;
+            $replacements[$original] = $base_url . $logo['url'];
+          }
+          break;
+      }
+    }
+  }
+
+  return $replacements;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function rrssb_theme($existing, $type, $theme, $path) {
+  return [
+    'rrssb_button_list' => [
+      'render element' => 'element',
+      'variables' => ['prefix_text' => NULL, 'button_set' => NULL, 'buttons' => []],
+    ],
+  ];
+}
+
+/**
+ * Helper function to undo the encoding that is unavoidable in token replace.
+ */
+function _rrssb_decode(&$replacements, $data, $options) {
+  $replacements = array_map(function ($s) {
+    return htmlspecialchars_decode($s, ENT_QUOTES);
+  }, $replacements);
+}
+
+/**
+ * Implements hook_cache_flush().
+ */
+function rrssb_cache_flush() {
+  // Delete auto-generated CSS.
+  if ($old = \Drupal::state()->get('rrssb_css_file')) {
+    \Drupal::service('file_system')->delete($old);
+  }
+  \Drupal::state()->delete('rrssb_css_file');
+}
+
+/**
+ * Return the RRSSB library path.
+ *
+ * For D8 just hard-code the path (must match rrssb.libraries.yml).
+ */
+function rrssb_library_path() {
+  return 'libraries/rrssb-plus';
+}
+
+/**
+ * Implements hook_library_info_alter().
+ */
+function rrssb_library_info_alter(&$libraries, $extension) {
+  if ($extension == 'rrssb') {
+    $libPath = rrssb_library_path();
+    $config = \Drupal::config('rrssb.settings');
+
+    if (is_readable("$libPath/VERSION.txt")) {
+      $libraries['main']['version'] = file_get_contents("$libPath/VERSION.txt");
+    }
+    elseif (is_readable("$libPath/package.json")) {
+      $packageString = file_get_contents("$libPath/package.json");
+      $packageJson = json_decode($packageString, TRUE);
+      $libraries['main']['version'] = $packageJson['version'];
+    }
+
+    if ($config->get('test')) {
+      $libraries['main']['js'] = [
+        "/$libPath/js/rrssb.js" => [],
+      ];
+    }
+
+    $css = \Drupal::state()->get('rrssb_css_file');
+    if ($css) {
+      $libraries['init']['css']['component'][$css] = [];
+    }
+  }
+}
+
+/**
+ * Returns a Drupal render array for the buttons.
+ *
+ * @param object $node
+ *   The node object to build buttons for.
+ *
+ * @param string $context
+ *   Additional cache context to set if applicable.
+ *
+ * @return array render
+ *   A render array for the list of buttons.
+ */
+function rrssb_get_buttons($buttonSet, $node, $context = NULL) {
+  $config = \Drupal::config("rrssb.button_set.$buttonSet");
+  if (!$config) {
+    return [];
+  }
+  $token_service = \Drupal::service('token');
+  $follow = $config->get('follow');
+  $meta = BubbleableMetadata::createFromObject($config);
+
+  if (!$follow) {
+    // Share buttons need to pick up attributes from the node/page using tokens.
+    // Skip this for follow buttons which are the same throughout the site.
+    if ($context) {
+      $meta->setCacheContexts([$context]);
+    }
+
+    // Create an array for how we will map [rrssb:XXX] tokens.  The key is the
+    // XXX value and the value is an array of other tokens to try in turn until
+    // one works.  For the image token, we allow the user to configure the list
+    // of tokens.
+    $image_tokens = explode('|', $config->get('image_tokens') ?: RRSSB_DEFAULT_IMAGE_TOKEN);
+
+    $mapping = [
+      'url' => ['[node:url]', '[current-page:url]'],
+      'title' => ['[node:title]', '[current-page:title]'],
+      'image' => $image_tokens,
+    ];
+
+    // Replace tokens.
+    foreach ($mapping as $param => $tokens) {
+      foreach ($tokens as $token) {
+        $rrssb[$param] = $token_service->replace($token, ['node' => $node], ['clear' => TRUE, 'callback' => '_rrssb_decode'], $meta);
+        if ($rrssb[$param]) {
+          break;
+        }
+      }
+    }
+
+    // If the image returned a comma separated list, just take the first entry.
+    list($rrssb['image']) = explode(',', $rrssb['image']);
+  }
+
+  // Create list of buttons.
+  $key = $follow ? 'follow_url' : 'share_url';
+  $buttons = [];
+  foreach (rrssb_settings($buttonSet) as $name => $button) {
+    $rrssb['username'] = $button['username'];
+    // No need to pass in $meta again as it already contains the correct value from above.
+    $link = $token_service->replace($button[$key], ['rrssb' => $rrssb], ['urlencode' => TRUE]);
+    $class = $button['popup'] ? 'class="popup"' : '';
+    $buttons[] = [
+      'svg' => $button['svg'],
+      'text' => $token_service->replace($button['text'], ['rrssb' => $rrssb]),
+      'link' => $link,
+      'name' => $name,
+      'class' => $class,
+    ];
+  }
+  $items = [
+    '#theme' => 'rrssb_button_list',
+    '#prefix_text' => $config->get('prefix'),
+    '#button_set' => $buttonSet,
+    '#buttons' => $buttons,
+  ];
+  $meta->applyTo($items);
+
+  // Attach library, first making sure the auto-generated CSS file exists.
+  if (!\Drupal::state()->get('rrssb_css_file')) {
+    rrssb_gen_css();
+  }
+
+  $items['#attached']['library'][] = 'rrssb/init';
+  $items['#attached']['drupalSettings']['rrssb'][$buttonSet] = $config->get('appearance');
+
+  return $items;
+}
+
+/**
+ * Fetch buttons settings.
+ *
+ * @param string $buttonSet
+ *   Button set to fetch settings for.
+ *
+ * @return array
+ *   Key is button name, value is an array of button config and settings merged.
+ *   For config values, see hook_rrssb_buttons.
+ *   Settings values are 'enabled', 'weight', 'username'.
+ */
+function rrssb_settings($buttonSet) {
+  // Get all buttons.
+  $buttons = rrssb_button_config();
+  $config = \Drupal::config("rrssb.button_set.$buttonSet");
+  if (!$config) {
+    return [];
+  }
+  $chosen = $config->get('chosen');
+  $defaults = [
+    'enabled' => FALSE,
+    'weight' => 0,
+    'username' => '',
+  ];
+
+  $follow = $config->get('follow');
+
+  // Set some defaults.
+  foreach ($buttons as $name => &$button) {
+    // Merge in the current config, with suitable defaults and checking.
+    if (isset($chosen[$name])) {
+      $button += $chosen[$name];
+    }
+    $button += $defaults;
+    $button['username'] = Html::escape($button['username']);
+
+    if ($follow) {
+      $button['text'] = $button['title_follow'];
+    }
+  }
+
+  // Sort buttons by configured weight.
+  uasort($buttons, ['Drupal\Component\Utility\SortArray', 'sortByWeightElement']);
+
+  // Filter to only include enabled ones with a URL configured.
+  $key = $follow ? 'follow_url' : 'share_url';
+  $buttons = array_filter($buttons, function ($button) use ($key) {
+    return $button['enabled'] && isset($button[$key]);
+  });
+
+  return $buttons;
+}
+
+/**
+ * Fetch config for all buttons.
+ *
+ * @return array
+ *   Key is button name, value is an array of button config.
+ *   For config values, see hook_rrssb_buttons.
+ */
+function rrssb_button_config() {
+  $buttons = &drupal_static(__FUNCTION__);
+  if (isset($buttons)) {
+    return $buttons;
+  }
+
+  if ($cache = \Drupal::cache()->get('rrssb_buttons')) {
+    return $cache->data;
+  }
+
+  $buttons = Drupal::moduleHandler()->invokeAll('rrssb_buttons');
+  Drupal::moduleHandler()->alter('rrssb_buttons', $buttons);
+  $iconsDir = rrssb_library_path() . '/icons';
+
+  // Set some defaults.
+  foreach ($buttons as $name => &$button) {
+    if (!isset($button['svg'])) {
+      // Read SVG from file.
+      $svgfile = isset($button['svgfile']) ? $button['svgfile'] : "<icons>/$name.min.svg";
+      $svgfile = str_replace('<icons>', $iconsDir, $svgfile);
+      $button['svg'] = file_get_contents($svgfile);
+    }
+
+    // Default text to name.
+    if (!isset($button['text'])) {
+      $button['text'] = $name;
+    }
+
+    if (!isset($button['title_follow'])) {
+      $button['title_follow'] = $button['text'];
+    }
+
+    if (!isset($button['popup'])) {
+      $button['popup'] = TRUE;
+    }
+  }
+
+  \Drupal::cache()->set('rrssb_buttons', $buttons);
+  return $buttons;
+}
+
+/**
+ * Auto-generate CSS for buttons.
+ *
+ * The RRSSB library CSS is static.  This function takes account the results of
+ * hook_rrssb_buttons and hook_rrssb_buttons_alter to create dynamic,
+ * site-specific CSS.  It optimises by only including buttons that are enabled.
+ *
+ * The fact that this module is not relying on library CSS for buttons means
+ * that there is greater compatibility to work with older library versions
+ * that are missing CSS for newer buttons.
+ */
+function rrssb_gen_css() {
+  $state = \Drupal::state();
+  $file_system = \Drupal::service('file_system');
+  $css = "/* Auto-generated RRSSB CSS file. */\n";
+  $buttons = [];
+  foreach (rrssb_button_sets() as $buttonSet => $config) {
+    $buttons += rrssb_settings($buttonSet);
+  }
+  $css .= rrssb_calc_css($buttons);
+
+  // Save to a unique filename.
+  $id = substr(hash('sha256', serialize($buttons) . microtime()), 0, 8);
+  $dir = 'public://rrssb';
+  $file = "$dir/rrssb.$id.css";
+  $file_system->prepareDirectory($dir, FileSystemInterface::CREATE_DIRECTORY);
+  $file_system->saveData($css, $file, FileSystemInterface::EXISTS_REPLACE);
+
+  // Delete the old file and record the new location.
+  if ($old = $state->get('rrssb_css_file')) {
+    $file_system->delete($old);
+  }
+  $state->set('rrssb_css_file', $file);
+
+  // Clear library cache as it contains this file name.
+  \Drupal::service('library.discovery')->clearCachedDefinitions();
+
+  return $file;
+}
+
+/**
+ * Calculate CSS for the specified buttons.
+ */
+function rrssb_calc_css($buttons) {
+  $css = '';
+  foreach ($buttons as $name => $button) {
+    // Add a white fill.
+    $svg = str_replace('<path ', '<path fill="#FFF" ', $button['svg']);
+    // URL encode - only certain special characters are needed: <>#" and " can be safely swapped for '.
+    $svg = strtr($svg, ['<' => '%3C', '>' => '%3E', '#' => '%23', '"' => '\'']);
+
+    $css .= <<<EOM
+.rrssb-buttons li.rrssb-$name a { background-color: $button[color]; }
+.rrssb-buttons li.rrssb-$name a:hover { background-color: $button[color_hover]; }
+.rrssb-$name .rrssb-icon { background: url("data:image/svg+xml,$svg"); }
+
+EOM;
+  }
+
+  return $css;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function rrssb_form_node_type_form_alter(&$form, FormStateInterface $form_state) {
+  $form['rrssb'] = [
+    '#type' => 'details',
+    '#title' => t('Ridiculously Responsive Social Share Buttons'),
+    '#collapsible' => TRUE,
+    '#group' => 'additional_settings',
+    '#weight' => 20,
+    '#access' => \Drupal::currentUser()->hasPermission('administer nodes'),
+    '#attached' => ['library' => ['rrssb/nodetype']],
+  ];
+
+  $type = $form_state->getFormObject()->getEntity();
+  $form['rrssb']['button_set'] = [
+    '#type' => 'select',
+    '#options' => rrssb_button_set_names(),
+    '#title' => t('Select RRSSB button set to display.'),
+    '#default_value' => $type->getThirdPartySetting('rrssb', 'button_set', ''),
+  ];
+  $form['#entity_builders'][] = 'rrssb_node_type_entity_builder';
+}
+
+/**
+ * Custom handler to save rrssb info.
+ */
+function rrssb_node_type_entity_builder($entity_type, NodeTypeInterface $type, &$form, FormStateInterface $form_state) {
+  $type->setThirdPartySetting('rrssb', 'button_set', $form_state->getValue('button_set'));
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_view().
+ */
+function rrssb_node_view(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode) {
+  if ($display->getComponent('rrssb')) {
+    $type = NodeType::load($entity->bundle());
+    if ($buttonSet = $type->getThirdPartySetting('rrssb', 'button_set', '')) {
+      $build['rrssb'] = rrssb_get_buttons($buttonSet, $entity);
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_extra_field_info().
+ */
+function rrssb_entity_extra_field_info() {
+  $extra = [];
+  foreach (NodeType::loadMultiple() as $bundle) {
+    if ($bundle->getThirdPartySetting('rrssb', 'button_set', '')) {
+      $extra['node'][$bundle->id()]['display']['rrssb'] = [
+        'label' => t('Ridiculously Responsive Social Share Buttons'),
+        'description' => t('A fake field to display Social buttons'),
+        'weight' => 10,
+      ];
+    }
+  }
+
+  return $extra;
+}
+
+/**
+ * Return all button sets.
+ */
+function rrssb_button_sets() {
+  return \Drupal::entityTypeManager()->getStorage('rrssb_button_set')->loadMultiple();
+}
+
+/**
+ * Return the names (labels) of all button sets.
+ */
+function rrssb_button_set_names() {
+  $names = ['' => t('- None -')];
+  foreach (rrssb_button_sets() as $buttonSet => $config) {
+    $names[$buttonSet] = $config->label();
+  }
+  return $names;
+}
+
+/**
+ * Implements hook_extlink_css_exclude_alter().
+ *
+ * Tell extlink module not to mark our links with an icon.
+ */
+function rrssb_extlink_css_exclude_alter(&$cssExclude) {
+  if (empty($cssExclude)) {
+    $cssExclude = '.rrssb-buttons';
+  }
+  else {
+    $cssExclude .= ', .rrssb-buttons';
+  }
+}

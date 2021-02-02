@@ -1,0 +1,65 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - transaction.operation.userpoints_rules_earn_on_register
+  enforced:
+    module:
+      - userpoints_rules_example
+id: userpoints_rules_earn_on_register
+label: 'Earn points on user register'
+events:
+  -
+    event_name: 'rules_entity_insert:user'
+description: 'Grants user points for the registration on the site.'
+tags:
+  - userpoints
+  - example
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: 8d831e38-651a-4894-9c85-8c89942b06a0
+  conditions:
+    id: rules_and
+    uuid: abf08419-71c7-4c96-b72c-e2b8e7c39f02
+    conditions: {  }
+  actions:
+    id: rules_action_set
+    uuid: a3ef103d-585b-4fe4-9cf5-56a01ad25e43
+    actions:
+      -
+        id: rules_action
+        uuid: 53917247-36ea-4a14-a2d5-f54795588289
+        context_values:
+          transaction_type_id: userpoints_default_points
+          operation_id: userpoints_rules_earn_on_register
+          transaction_field_amount: '10'
+          transaction_field_balance: '0'
+          transaction_field_log_message: ''
+        context_mapping:
+          target_entity: user
+        context_processors:
+          transaction_type_id:
+            rules_tokens: {  }
+          operation_id:
+            rules_tokens: {  }
+          transaction_field_amount:
+            rules_tokens: {  }
+          transaction_field_balance:
+            rules_tokens: {  }
+          transaction_field_log_message:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: 'transaction_create:userpoints'
+      -
+        id: rules_action
+        uuid: b22d62d7-a4bf-477b-a93f-a83ff46a197c
+        context_values:
+          immediate: ''
+        context_mapping:
+          transaction: transaction
+        context_processors:
+          immediate:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: transaction_execute
