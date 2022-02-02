@@ -1,0 +1,6 @@
+services:
+  main_content_renderer.bs4_modal:
+    class: Drupal\bootstrap4_modal\Render\MainContent\Bootstrap4ModalRenderer
+    arguments: ['@title_resolver', '@renderer']
+    tags:
+      - { name: render.main_content_renderer, format: drupal_bootstrap4_modal }

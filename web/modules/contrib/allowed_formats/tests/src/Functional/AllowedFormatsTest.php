@@ -5,6 +5,7 @@ namespace Drupal\Tests\allowed_formats\Functional;
 use Drupal\filter\Entity\FilterFormat;
 use Drupal\Tests\BrowserTestBase;
 use Drupal\Tests\taxonomy\Traits\TaxonomyTestTrait;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 
 /**
  * Tests the basic functionality of Allowed Formats.
@@ -15,6 +16,7 @@ class AllowedFormatsTest extends BrowserTestBase {
 
   // Provides shortcut method createVocabulary().
   use TaxonomyTestTrait;
+  use StringTranslationTrait;
 
   /**
    * {@inheritdoc}
@@ -53,8 +55,14 @@ class AllowedFormatsTest extends BrowserTestBase {
   protected function setUp() {
     parent::setUp();
 
-    $this->adminUser = $this->drupalCreateUser(['administer filters', 'administer entity_test fields']);
-    $this->webUser = $this->drupalCreateUser(['administer entity_test content', 'administer taxonomy']);
+    $this->adminUser = $this->drupalCreateUser([
+      'administer filters',
+      'administer entity_test fields',
+    ]);
+    $this->webUser = $this->drupalCreateUser([
+      'administer entity_test content',
+      'administer taxonomy',
+    ]);
   }
 
   /**
@@ -81,28 +89,30 @@ class AllowedFormatsTest extends BrowserTestBase {
     // Change the Allowed Formats settings of the test field created by
     // entity_test_install().
     $this->drupalLogin($this->adminUser);
-    $this->drupalPostForm('entity_test/structure/entity_test/fields/entity_test.entity_test.field_test_text', [
-      'third_party_settings[allowed_formats][' . $format1->id() . ']' => TRUE,
-      'third_party_settings[allowed_formats][' . $format2->id() . ']' => TRUE,
-    ], t('Save settings'));
+    $this->drupalGet('entity_test/structure/entity_test/fields/entity_test.entity_test.field_test_text');
+    $this->submitForm([
+      'third_party_settings[allowed_formats][allowed_formats][' . $format1->id() . ']' => TRUE,
+      'third_party_settings[allowed_formats][allowed_formats][' . $format2->id() . ']' => TRUE,
+    ], $this->t('Save settings'));
 
     // Display the creation form.
     $this->drupalLogin($this->webUser);
     $this->drupalGet('entity_test/add');
-    $this->assertFieldByName("field_test_text[0][value]", NULL, 'Widget is displayed');
-    $this->assertFieldByName("field_test_text[0][format]", NULL, 'Format selector is displayed');
+    $this->assertSession()->fieldExists("field_test_text[0][value]");
+    $this->assertSession()->fieldExists("field_test_text[0][format]");
 
     // Change field to allow only one format.
     $this->drupalLogin($this->adminUser);
-    $this->drupalPostForm('entity_test/structure/entity_test/fields/entity_test.entity_test.field_test_text', [
-      'third_party_settings[allowed_formats][' . $format2->id() . ']' => FALSE,
-    ], t('Save settings'));
+    $this->drupalGet('entity_test/structure/entity_test/fields/entity_test.entity_test.field_test_text');
+    $this->submitForm([
+      'third_party_settings[allowed_formats][allowed_formats][' . $format2->id() . ']' => FALSE,
+    ], $this->t('Save settings'));
 
     // We shouldn't have the 'format' selector since only one format is allowed.
     $this->drupalLogin($this->webUser);
     $this->drupalGet('entity_test/add');
-    $this->assertFieldByName("field_test_text[0][value]", NULL, 'Widget is displayed');
-    $this->assertNoFieldByName("field_test_text[0][format]", NULL, 'Format selector is not displayed');
+    $this->assertSession()->fieldExists("field_test_text[0][value]");
+    $this->assertSession()->fieldNotExists("field_test_text[0][format]");
   }
 
   /**
@@ -139,11 +149,11 @@ class AllowedFormatsTest extends BrowserTestBase {
     // available.
     $this->drupalLogin($this->webUser);
     $this->drupalGet('admin/structure/taxonomy/manage/' . $vocabulary->id() . '/add');
-    $this->assertFieldByName("description[0][value]", NULL, 'Widget is displayed');
-    $this->assertFieldByName("description[0][format]", NULL, 'Format selector is displayed');
-    $this->assertOption('edit-description-0-format--2', 'basic_html');
-    $this->assertOption('edit-description-0-format--2', 'restricted_html');
-    $this->assertOption('edit-description-0-format--2', 'full_html');
+    $this->assertSession()->fieldExists("description[0][value]");
+    $this->assertSession()->fieldExists("description[0][format]");
+    $this->assertSession()->optionExists('edit-description-0-format--2', 'basic_html');
+    $this->assertSession()->optionExists('edit-description-0-format--2', 'restricted_html');
+    $this->assertSession()->optionExists('edit-description-0-format--2', 'full_html');
 
     // Enable our test module, which disallows using the 'full_html' format
     // using the allowed_formats functionality.
@@ -152,11 +162,11 @@ class AllowedFormatsTest extends BrowserTestBase {
     // Display the term creation form again and check that 'full_html' is
     // not available as expected.
     $this->drupalGet('admin/structure/taxonomy/manage/' . $vocabulary->id() . '/add');
-    $this->assertFieldByName("description[0][value]", NULL, 'Widget is displayed');
-    $this->assertFieldByName("description[0][format]", NULL, 'Format selector is displayed');
-    $this->assertOption('edit-description-0-format--2', 'basic_html');
-    $this->assertOption('edit-description-0-format--2', 'restricted_html');
-    $this->assertNoOption('edit-description-0-format--2', 'full_html');
+    $this->assertSession()->fieldExists("description[0][value]");
+    $this->assertSession()->fieldExists("description[0][format]");
+    $this->assertSession()->optionExists('edit-description-0-format--2', 'basic_html');
+    $this->assertSession()->optionExists('edit-description-0-format--2', 'restricted_html');
+    $this->assertSession()->optionNotExists('edit-description-0-format--2', 'full_html');
   }
 
 }

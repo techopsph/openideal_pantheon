@@ -60,8 +60,16 @@ var Swiper = {
       type: Boolean,
       default: undefined
     },
+    resizeObserver: {
+      type: Boolean,
+      default: undefined
+    },
     nested: {
       type: Boolean,
+      default: undefined
+    },
+    focusableElements: {
+      type: String,
       default: undefined
     },
     width: {
@@ -400,6 +408,18 @@ var Swiper = {
       type: Boolean,
       default: undefined
     },
+    observer: {
+      type: Boolean,
+      default: undefined
+    },
+    observeParents: {
+      type: Boolean,
+      default: undefined
+    },
+    observeSlideChildren: {
+      type: Boolean,
+      default: undefined
+    },
     a11y: {
       type: [Boolean, Object],
       default: undefined
@@ -477,7 +497,7 @@ var Swiper = {
       default: undefined
     }
   },
-  emits: ['_beforeBreakpoint', '_containerClasses', '_slideClass', '_slideClasses', '_swiper', 'activeIndexChange', 'afterInit', 'autoplay', 'autoplayStart', 'autoplayStop', 'beforeDestroy', 'beforeInit', 'beforeLoopFix', 'beforeResize', 'beforeSlideChangeStart', 'beforeTransitionStart', 'breakpoint', 'changeDirection', 'click', 'doubleTap', 'doubleClick', 'destroy', 'fromEdge', 'hashChange', 'hashSet', 'imagesReady', 'init', 'keyPress', 'lazyImageLoad', 'lazyImageReady', 'loopFix', 'momentumBounce', 'navigationHide', 'navigationShow', 'observerUpdate', 'orientationchange', 'paginationHide', 'paginationRender', 'paginationShow', 'paginationUpdate', 'progress', 'reachBeginning', 'reachEnd', 'realIndexChange', 'resize', 'scroll', 'scrollbarDragEnd', 'scrollbarDragMove', 'scrollbarDragStart', 'setTransition', 'setTranslate', 'slideChange', 'slideChangeTransitionEnd', 'slideChangeTransitionStart', 'slideNextTransitionEnd', 'slideNextTransitionStart', 'slidePrevTransitionEnd', 'slidePrevTransitionStart', 'slideResetTransitionStart', 'slideResetTransitionEnd', 'sliderMove', 'sliderFirstMove', 'slidesLengthChange', 'slidesGridLengthChange', 'snapGridLengthChange', 'snapIndexChange', 'swiper', 'tap', 'toEdge', 'touchEnd', 'touchMove', 'touchMoveOpposite', 'touchStart', 'transitionEnd', 'transitionStart', 'update', 'zoomChange'],
+  emits: ['_beforeBreakpoint', '_containerClasses', '_slideClass', '_slideClasses', '_swiper', 'activeIndexChange', 'afterInit', 'autoplay', 'autoplayStart', 'autoplayStop', 'beforeDestroy', 'beforeInit', 'beforeLoopFix', 'beforeResize', 'beforeSlideChangeStart', 'beforeTransitionStart', 'breakpoint', 'changeDirection', 'click', 'disable', 'doubleTap', 'doubleClick', 'destroy', 'enable', 'fromEdge', 'hashChange', 'hashSet', 'imagesReady', 'init', 'keyPress', 'lazyImageLoad', 'lazyImageReady', 'lock', 'loopFix', 'momentumBounce', 'navigationHide', 'navigationShow', 'observerUpdate', 'orientationchange', 'paginationHide', 'paginationRender', 'paginationShow', 'paginationUpdate', 'progress', 'reachBeginning', 'reachEnd', 'realIndexChange', 'resize', 'scroll', 'scrollbarDragEnd', 'scrollbarDragMove', 'scrollbarDragStart', 'setTransition', 'setTranslate', 'slideChange', 'slideChangeTransitionEnd', 'slideChangeTransitionStart', 'slideNextTransitionEnd', 'slideNextTransitionStart', 'slidePrevTransitionEnd', 'slidePrevTransitionStart', 'slideResetTransitionStart', 'slideResetTransitionEnd', 'sliderMove', 'sliderFirstMove', 'slidesLengthChange', 'slidesGridLengthChange', 'snapGridLengthChange', 'snapIndexChange', 'swiper', 'tap', 'toEdge', 'touchEnd', 'touchMove', 'touchMoveOpposite', 'touchStart', 'transitionEnd', 'transitionStart', 'unlock', 'update', 'zoomChange'],
   setup: function setup(props, _ref) {
     var originalSlots = _ref.slots,
         emit = _ref.emit;
@@ -567,16 +587,25 @@ var Swiper = {
       oldPassedParamsRef.value = newPassedParams;
 
       if ((changedParams.length || breakpointChanged.value) && swiperRef.value && !swiperRef.value.destroyed) {
-        (0, _updateSwiper.updateSwiper)(swiperRef.value, slidesRef.value, newPassedParams, changedParams);
+        (0, _updateSwiper.updateSwiper)({
+          swiper: swiperRef.value,
+          slides: slidesRef.value,
+          passedParams: newPassedParams,
+          changedParams: changedParams,
+          nextEl: nextElRef.value,
+          prevEl: prevElRef.value,
+          scrollbarEl: scrollbarElRef.value,
+          paginationEl: paginationElRef.value
+        });
       }
 
       breakpointChanged.value = false;
     }); // update on virtual update
 
-    (0, _vue.watch)(function () {
-      return virtualData;
-    }, function () {
-      (0, _virtual.updateOnVirtualData)(swiperRef.value);
+    (0, _vue.watch)(virtualData, function () {
+      (0, _vue.nextTick)(function () {
+        (0, _virtual.updateOnVirtualData)(swiperRef.value);
+      });
     }); // mount swiper
 
     (0, _vue.onMounted)(function () {

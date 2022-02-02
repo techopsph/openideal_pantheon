@@ -1,8 +1,29 @@
-import { getWindow } from 'ssr-window';
 import { extend } from '../../../utils/utils';
 export default function updateSlides() {
   var swiper = this;
-  var window = getWindow();
+
+  function getDirectionLabel(property) {
+    if (swiper.isHorizontal()) {
+      return property;
+    } // prettier-ignore
+
+
+    return {
+      'width': 'height',
+      'margin-top': 'margin-left',
+      'margin-bottom ': 'margin-right',
+      'margin-left': 'margin-top',
+      'margin-right': 'margin-bottom',
+      'padding-left': 'padding-top',
+      'padding-right': 'padding-bottom',
+      'marginRight': 'marginBottom'
+    }[property];
+  }
+
+  function getDirectionPropertyValue(node, label) {
+    return parseFloat(node.getPropertyValue(getDirectionLabel(label)) || 0);
+  }
+
   var params = swiper.params;
   var $wrapperEl = swiper.$wrapperEl,
       swiperSize = swiper.size,
@@ -15,17 +36,6 @@ export default function updateSlides() {
   var snapGrid = [];
   var slidesGrid = [];
   var slidesSizesGrid = [];
-
-  function slidesForMargin(slideEl, slideIndex) {
-    if (!params.cssMode) return true;
-
-    if (slideIndex === slides.length - 1) {
-      return false;
-    }
-
-    return true;
-  }
-
   var offsetBefore = params.slidesOffsetBefore;
 
   if (typeof offsetBefore === 'function') {
@@ -57,10 +67,12 @@ export default function updateSlides() {
 
   if (rtl) slides.css({
     marginLeft: '',
+    marginBottom: '',
     marginTop: ''
   });else slides.css({
     marginRight: '',
-    marginBottom: ''
+    marginBottom: '',
+    marginTop: ''
   });
   var slidesNumberEvenToRows;
 
@@ -123,13 +135,13 @@ export default function updateSlides() {
         column = i - row * slidesPerRow;
       }
 
-      slide.css("margin-" + (swiper.isHorizontal() ? 'top' : 'left'), row !== 0 && params.spaceBetween && params.spaceBetween + "px");
+      slide.css(getDirectionLabel('margin-top'), row !== 0 ? params.spaceBetween && params.spaceBetween + "px" : '');
     }
 
     if (slide.css('display') === 'none') continue; // eslint-disable-line
 
     if (params.slidesPerView === 'auto') {
-      var slideStyles = window.getComputedStyle(slide[0], null);
+      var slideStyles = getComputedStyle(slide[0]);
       var currentTransform = slide[0].style.transform;
       var currentWebKitTransform = slide[0].style.webkitTransform;
 
@@ -145,39 +157,20 @@ export default function updateSlides() {
         slideSize = swiper.isHorizontal() ? slide.outerWidth(true) : slide.outerHeight(true);
       } else {
         // eslint-disable-next-line
-        if (swiper.isHorizontal()) {
-          var width = parseFloat(slideStyles.getPropertyValue('width') || 0);
-          var paddingLeft = parseFloat(slideStyles.getPropertyValue('padding-left') || 0);
-          var paddingRight = parseFloat(slideStyles.getPropertyValue('padding-right') || 0);
-          var marginLeft = parseFloat(slideStyles.getPropertyValue('margin-left') || 0);
-          var marginRight = parseFloat(slideStyles.getPropertyValue('margin-right') || 0);
-          var boxSizing = slideStyles.getPropertyValue('box-sizing');
+        var width = getDirectionPropertyValue(slideStyles, 'width');
+        var paddingLeft = getDirectionPropertyValue(slideStyles, 'padding-left');
+        var paddingRight = getDirectionPropertyValue(slideStyles, 'padding-right');
+        var marginLeft = getDirectionPropertyValue(slideStyles, 'margin-left');
+        var marginRight = getDirectionPropertyValue(slideStyles, 'margin-right');
+        var boxSizing = slideStyles.getPropertyValue('box-sizing');
 
-          if (boxSizing && boxSizing === 'border-box') {
-            slideSize = width + marginLeft + marginRight;
-          } else {
-            var _slide$ = slide[0],
-                clientWidth = _slide$.clientWidth,
-                offsetWidth = _slide$.offsetWidth;
-            slideSize = width + paddingLeft + paddingRight + marginLeft + marginRight + (offsetWidth - clientWidth);
-          }
+        if (boxSizing && boxSizing === 'border-box') {
+          slideSize = width + marginLeft + marginRight;
         } else {
-          var height = parseFloat(slideStyles.getPropertyValue('height') || 0);
-          var paddingTop = parseFloat(slideStyles.getPropertyValue('padding-top') || 0);
-          var paddingBottom = parseFloat(slideStyles.getPropertyValue('padding-bottom') || 0);
-          var marginTop = parseFloat(slideStyles.getPropertyValue('margin-top') || 0);
-          var marginBottom = parseFloat(slideStyles.getPropertyValue('margin-bottom') || 0);
-
-          var _boxSizing = slideStyles.getPropertyValue('box-sizing');
-
-          if (_boxSizing && _boxSizing === 'border-box') {
-            slideSize = height + marginTop + marginBottom;
-          } else {
-            var _slide$2 = slide[0],
-                clientHeight = _slide$2.clientHeight,
-                offsetHeight = _slide$2.offsetHeight;
-            slideSize = height + paddingTop + paddingBottom + marginTop + marginBottom + (offsetHeight - clientHeight);
-          }
+          var _slide$ = slide[0],
+              clientWidth = _slide$.clientWidth,
+              offsetWidth = _slide$.offsetWidth;
+          slideSize = width + paddingLeft + paddingRight + marginLeft + marginRight + (offsetWidth - clientWidth);
         }
       }
 
@@ -195,11 +188,7 @@ export default function updateSlides() {
       if (params.roundLengths) slideSize = Math.floor(slideSize);
 
       if (slides[i]) {
-        if (swiper.isHorizontal()) {
-          slides[i].style.width = slideSize + "px";
-        } else {
-          slides[i].style.height = slideSize + "px";
-        }
+        slides[i].style[getDirectionLabel('width')] = slideSize + "px";
       }
     }
 
@@ -239,21 +228,17 @@ export default function updateSlides() {
   }
 
   if (params.setWrapperSize) {
-    if (swiper.isHorizontal()) $wrapperEl.css({
-      width: swiper.virtualSize + params.spaceBetween + "px"
-    });else $wrapperEl.css({
-      height: swiper.virtualSize + params.spaceBetween + "px"
-    });
+    var _$wrapperEl$css;
+
+    $wrapperEl.css((_$wrapperEl$css = {}, _$wrapperEl$css[getDirectionLabel('width')] = swiper.virtualSize + params.spaceBetween + "px", _$wrapperEl$css));
   }
 
   if (params.slidesPerColumn > 1) {
+    var _$wrapperEl$css2;
+
     swiper.virtualSize = (slideSize + params.spaceBetween) * slidesNumberEvenToRows;
     swiper.virtualSize = Math.ceil(swiper.virtualSize / params.slidesPerColumn) - params.spaceBetween;
-    if (swiper.isHorizontal()) $wrapperEl.css({
-      width: swiper.virtualSize + params.spaceBetween + "px"
-    });else $wrapperEl.css({
-      height: swiper.virtualSize + params.spaceBetween + "px"
-    });
+    $wrapperEl.css((_$wrapperEl$css2 = {}, _$wrapperEl$css2[getDirectionLabel('width')] = swiper.virtualSize + params.spaceBetween + "px", _$wrapperEl$css2));
 
     if (params.centeredSlides) {
       newSlidesGrid = [];
@@ -291,15 +276,18 @@ export default function updateSlides() {
   if (snapGrid.length === 0) snapGrid = [0];
 
   if (params.spaceBetween !== 0) {
-    if (swiper.isHorizontal()) {
-      if (rtl) slides.filter(slidesForMargin).css({
-        marginLeft: spaceBetween + "px"
-      });else slides.filter(slidesForMargin).css({
-        marginRight: spaceBetween + "px"
-      });
-    } else slides.filter(slidesForMargin).css({
-      marginBottom: spaceBetween + "px"
-    });
+    var _slides$filter$css;
+
+    var key = swiper.isHorizontal() && rtl ? 'marginLeft' : getDirectionLabel('marginRight');
+    slides.filter(function (_, slideIndex) {
+      if (!params.cssMode) return true;
+
+      if (slideIndex === slides.length - 1) {
+        return false;
+      }
+
+      return true;
+    }).css((_slides$filter$css = {}, _slides$filter$css[key] = spaceBetween + "px", _slides$filter$css));
   }
 
   if (params.centeredSlides && params.centeredSlidesBounds) {

@@ -112,7 +112,8 @@ class ModerationStateButtonsWidgetInfo implements ModerationStateButtonsWidgetIn
         $transitionPossible = $this->stateTransitionValidator
           ->isTransitionValid(
             $workflow, $currentState, $state, $this->currentUser);
-      } catch (\InvalidArgumentException $e) {
+      }
+      catch (\InvalidArgumentException $e) {
         // The transition doesn't exist.
         $transitionPossible = FALSE;
       }

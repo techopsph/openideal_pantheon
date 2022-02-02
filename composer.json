@@ -5,14 +5,16 @@
     "license": "GPL-2.0-or-later",
     "require": {
         "composer/installers": "^1.2",
+        "dealerdirect/phpcodesniffer-composer-installer": "^0.7.1",
         "drupal/ajax_comments": "1.x-dev#4b0c423",
         "drupal/ckeditor_mentions": "2.x-dev#272a28e7",
         "drupal/core-composer-scaffold": "^8.8",
         "drupal/core-project-message": "^8.8",
         "drupal/core-recommended": "^8.8",
+        "drupal/rules": "^3.0@alpha",
         "drush/drush": "^10",
         "linnovate/openideal": "^3.0",
-        "wikimedia/composer-merge-plugin": "^1.4"
+        "wikimedia/composer-merge-plugin": "^2.0"
     },
     "minimum-stability": "dev",
     "prefer-stable": true,

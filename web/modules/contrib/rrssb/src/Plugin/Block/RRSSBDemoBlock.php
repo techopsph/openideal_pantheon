@@ -23,7 +23,7 @@ class RRSSBDemoBlock extends RRSSBBlock {
   public function build() {
     // Start with config values from the specified button set.
     $config = $this->getConfiguration();
-    $button_set = \Drupal::entityManager()->getStorage('rrssb_button_set')->load($config['button_set']);
+    $button_set = \Drupal::entityTypeManager()->getStorage('rrssb_button_set')->load($config['button_set']);
 
     // Take the relevant parts from the configuration form.
     $form = \Drupal::service('entity.form_builder')->getForm($button_set, "edit");

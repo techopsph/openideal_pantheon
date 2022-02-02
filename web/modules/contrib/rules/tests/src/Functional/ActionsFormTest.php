@@ -176,7 +176,7 @@ class ActionsFormTest extends RulesBrowserTestBase {
           'list' => 'node.uid.entity.roles',
           'item' => '1',
           'unique' => TRUE,
-          'pos' => 'start',
+          'position' => 'start',
         ],
       ],
       'List item remove' => [

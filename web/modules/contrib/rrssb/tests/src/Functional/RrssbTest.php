@@ -16,7 +16,7 @@ class RrssbTest extends BrowserTestBase {
    *
    * @var array
    */
-  public static $modules = ['node', 'field_ui', 'rrssb'];
+  protected static $modules = ['node', 'field_ui', 'rrssb'];
 
   /**
    * {@inheritdoc}
@@ -26,7 +26,7 @@ class RrssbTest extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->drupalCreateContentType(['type' => 'article', 'name' => 'Article']);
   }
@@ -50,7 +50,8 @@ class RrssbTest extends BrowserTestBase {
 
     // Enable RRSSB.
     $edit = ['button_set' => 'default'];
-    $this->drupalPostForm('admin/structure/types/manage/article', $edit, t('Save content type'));
+    $this->drupalGet('admin/structure/types/manage/article');
+    $this->submitForm($edit, 'Save content type');
 
     // Check access to the important pages.
     // @todo Add testing for these.

@@ -13,7 +13,9 @@ export default function slidePrev(speed, runCallbacks, internal) {
       animating = swiper.animating,
       snapGrid = swiper.snapGrid,
       slidesGrid = swiper.slidesGrid,
-      rtlTranslate = swiper.rtlTranslate;
+      rtlTranslate = swiper.rtlTranslate,
+      enabled = swiper.enabled;
+  if (!enabled) return swiper;
 
   if (params.loop) {
     if (animating && params.loopPreventsSlide) return false;
@@ -33,7 +35,6 @@ export default function slidePrev(speed, runCallbacks, internal) {
   var normalizedSnapGrid = snapGrid.map(function (val) {
     return normalize(val);
   });
-  var currentSnap = snapGrid[normalizedSnapGrid.indexOf(normalizedTranslate)];
   var prevSnap = snapGrid[normalizedSnapGrid.indexOf(normalizedTranslate) - 1];
 
   if (typeof prevSnap === 'undefined' && params.cssMode) {

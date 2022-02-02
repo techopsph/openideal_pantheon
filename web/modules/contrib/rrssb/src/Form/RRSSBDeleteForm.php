@@ -7,7 +7,7 @@ use Drupal\Core\Url;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
- * Class RRSSBDeleteForm.
+ * RRSSB delete form.
  */
 class RRSSBDeleteForm extends EntityConfirmFormBase {
 

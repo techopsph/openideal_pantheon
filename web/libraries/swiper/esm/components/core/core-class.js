@@ -3,6 +3,7 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
 /* eslint no-param-reassign: "off" */
+import { getDocument } from 'ssr-window';
 import $ from '../../utils/dom';
 import { extend, now, deleteProps } from '../../utils/utils';
 import { getSupport } from '../../utils/get-support';
@@ -52,7 +53,7 @@ var Swiper = /*#__PURE__*/function () {
       args[_key] = arguments[_key];
     }
 
-    if (args.length === 1 && args[0].constructor && args[0].constructor === Object) {
+    if (args.length === 1 && args[0].constructor && Object.prototype.toString.call(args[0]).slice(8, -1) === 'Object') {
       params = args[0];
     } else {
       el = args[0];
@@ -76,6 +77,7 @@ var Swiper = /*#__PURE__*/function () {
 
 
     var swiper = this;
+    swiper.__swiper__ = true;
     swiper.support = getSupport();
     swiper.device = getDevice({
       userAgent: params.userAgent
@@ -95,6 +97,13 @@ var Swiper = /*#__PURE__*/function () {
         var moduleParamName = Object.keys(module.params)[0];
         var moduleParams = module.params[moduleParamName];
         if (typeof moduleParams !== 'object' || moduleParams === null) return;
+
+        if (['navigation', 'pagination', 'scrollbar'].indexOf(moduleParamName) >= 0 && params[moduleParamName] === true) {
+          params[moduleParamName] = {
+            auto: true
+          };
+        }
+
         if (!(moduleParamName in params && 'enabled' in moduleParams)) return;
 
         if (params[moduleParamName] === true) {
@@ -134,6 +143,7 @@ var Swiper = /*#__PURE__*/function () {
     swiper.$ = $; // Extend Swiper
 
     extend(swiper, {
+      enabled: swiper.params.enabled,
       el: el,
       // Classes
       classNames: [],
@@ -196,7 +206,7 @@ var Swiper = /*#__PURE__*/function () {
         startTranslate: undefined,
         allowThresholdMove: undefined,
         // Form elements to match
-        formElements: 'input, select, option, textarea, button, video, label',
+        focusableElements: swiper.params.focusableElements,
         // Last click time
         lastClickTime: now(),
         clickTimeout: undefined,
@@ -234,6 +244,41 @@ var Swiper = /*#__PURE__*/function () {
   }
 
   var _proto = Swiper.prototype;
+
+  _proto.enable = function enable() {
+    var swiper = this;
+    if (swiper.enabled) return;
+    swiper.enabled = true;
+
+    if (swiper.params.grabCursor) {
+      swiper.setGrabCursor();
+    }
+
+    swiper.emit('enable');
+  };
+
+  _proto.disable = function disable() {
+    var swiper = this;
+    if (!swiper.enabled) return;
+    swiper.enabled = false;
+
+    if (swiper.params.grabCursor) {
+      swiper.unsetGrabCursor();
+    }
+
+    swiper.emit('disable');
+  };
+
+  _proto.setProgress = function setProgress(progress, speed) {
+    var swiper = this;
+    progress = Math.min(Math.max(progress, 0), 1);
+    var min = swiper.minTranslate();
+    var max = swiper.maxTranslate();
+    var current = (max - min) * progress + min;
+    swiper.translateTo(current, typeof speed === 'undefined' ? 0 : speed);
+    swiper.updateActiveIndex();
+    swiper.updateSlidesClasses();
+  };
 
   _proto.emitContainerClasses = function emitContainerClasses() {
     var swiper = this;
@@ -398,18 +443,38 @@ var Swiper = /*#__PURE__*/function () {
       return false;
     }
 
-    el.swiper = swiper; // Find Wrapper
+    el.swiper = swiper;
 
-    var $wrapperEl;
+    var getWrapperSelector = function getWrapperSelector() {
+      return "." + (swiper.params.wrapperClass || '').trim().split(' ').join('.');
+    };
 
-    if (el && el.shadowRoot && el.shadowRoot.querySelector) {
-      $wrapperEl = $(el.shadowRoot.querySelector("." + swiper.params.wrapperClass)); // Children needs to return slot items
+    var getWrapper = function getWrapper() {
+      if (el && el.shadowRoot && el.shadowRoot.querySelector) {
+        var res = $(el.shadowRoot.querySelector(getWrapperSelector())); // Children needs to return slot items
 
-      $wrapperEl.children = function (options) {
-        return $el.children(options);
-      };
-    } else {
-      $wrapperEl = $el.children("." + swiper.params.wrapperClass);
+        res.children = function (options) {
+          return $el.children(options);
+        };
+
+        return res;
+      }
+
+      return $el.children(getWrapperSelector());
+    }; // Find Wrapper
+
+
+    var $wrapperEl = getWrapper();
+
+    if ($wrapperEl.length === 0 && swiper.params.createElements) {
+      var document = getDocument();
+      var wrapper = document.createElement('div');
+      $wrapperEl = $(wrapper);
+      wrapper.className = swiper.params.wrapperClass;
+      $el.append(wrapper);
+      $el.children("." + swiper.params.slideClass).each(function (slideEl) {
+        $wrapperEl.append(slideEl);
+      });
     }
 
     extend(swiper, {
@@ -454,7 +519,7 @@ var Swiper = /*#__PURE__*/function () {
     } // Set Grab Cursor
 
 
-    if (swiper.params.grabCursor) {
+    if (swiper.params.grabCursor && swiper.enabled) {
       swiper.setGrabCursor();
     }
 
@@ -464,9 +529,9 @@ var Swiper = /*#__PURE__*/function () {
 
 
     if (swiper.params.loop) {
-      swiper.slideTo(swiper.params.initialSlide + swiper.loopedSlides, 0, swiper.params.runCallbacksOnInit);
+      swiper.slideTo(swiper.params.initialSlide + swiper.loopedSlides, 0, swiper.params.runCallbacksOnInit, false, true);
     } else {
-      swiper.slideTo(swiper.params.initialSlide, 0, swiper.params.runCallbacksOnInit);
+      swiper.slideTo(swiper.params.initialSlide, 0, swiper.params.runCallbacksOnInit, false, true);
     } // Attach events
 
 

@@ -1,0 +1,37 @@
+bs4_modal.dialog:
+  version: VERSION
+  js:
+    js/bs4_modal.dialog.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal
+    - core/drupalSettings
+    - core/drupal.debounce
+    - core/drupal.displace
+
+bs4_modal.dialog.ajax:
+  version: VERSION
+  js:
+    js/bs4_modal.dialog.ajax.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal
+    - core/drupalSettings
+    - core/drupal.ajax
+    - bootstrap4_modal/bs4_modal.dialog
+
+
+bs4_modal.entity_browser:
+  version: VERSION
+  js:
+    js/bs4_modal_entitybrowser.js: {}
+  dependencies:
+    - bootstrap4_modal/bs4_modal.dialog
+    - bootstrap4_modal/bs4_modal.dialog.ajax
+
+bootstrap4_modal_selection:
+  version: VERSION
+  js:
+    js/entity_browser.bootstrap4_modal_selection.js: {}
+  dependencies:
+    - core/drupalSettings

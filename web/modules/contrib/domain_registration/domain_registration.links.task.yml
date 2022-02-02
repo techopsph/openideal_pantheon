@@ -1,0 +1,4 @@
+domain_registration.admin_form_tab:
+  route_name: domain_registration.admin_form
+  title: 'Domain registration'
+  base_route: domain_registration.admin_form

@@ -107,7 +107,10 @@ var Scrollbar = {
       moveDivider: moveDivider,
       dragSize: dragSize
     });
-    scrollbar.$el[swiper.params.watchOverflow && swiper.isLocked ? 'addClass' : 'removeClass'](swiper.params.scrollbar.lockClass);
+
+    if (swiper.params.watchOverflow && swiper.enabled) {
+      scrollbar.$el[swiper.isLocked ? 'addClass' : 'removeClass'](swiper.params.scrollbar.lockClass);
+    }
   },
   getPointerPosition: function getPointerPosition(e) {
     var swiper = this;
@@ -273,10 +276,13 @@ var Scrollbar = {
   },
   init: function init() {
     var swiper = this;
-    if (!swiper.params.scrollbar.el) return;
     var scrollbar = swiper.scrollbar,
         $swiperEl = swiper.$el;
+    swiper.params.scrollbar = (0, _utils.createElementIfNotDefined)($swiperEl, swiper.params.scrollbar, swiper.params.createElements, {
+      el: 'swiper-scrollbar'
+    });
     var params = swiper.params.scrollbar;
+    if (!params.el) return;
     var $el = (0, _dom.default)(params.el);
 
     if (swiper.params.uniqueNavElements && typeof params.el === 'string' && $el.length > 1 && $swiperEl.find(params.el).length === 1) {
@@ -299,6 +305,10 @@ var Scrollbar = {
 
     if (params.draggable) {
       scrollbar.enableDraggable();
+    }
+
+    if ($el) {
+      $el[swiper.enabled ? 'removeClass' : 'addClass'](swiper.params.scrollbar.lockClass);
     }
   },
   destroy: function destroy() {
@@ -349,6 +359,13 @@ var _default = {
     },
     setTransition: function setTransition(swiper, duration) {
       swiper.scrollbar.setTransition(duration);
+    },
+    'enable disable': function enableDisable(swiper) {
+      var $el = swiper.scrollbar.$el;
+
+      if ($el) {
+        $el[swiper.enabled ? 'removeClass' : 'addClass'](swiper.params.scrollbar.lockClass);
+      }
     },
     destroy: function destroy(swiper) {
       swiper.scrollbar.destroy();

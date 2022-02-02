@@ -1,8 +1,8 @@
 name: VotingAPI Tokens
-description: 'Token support for VotingAPI'
 type: module
-core: 8.x
-core_version_requirement: ^8 || ^9
+description: 'Token support for VotingAPI'
+package: Voting
+core_version_requirement: ^8.8.2 || ^9
 dependencies:
-- votingapi:votingapi
-- token:token
+  - votingapi:votingapi
+  - token:token

@@ -1,0 +1,5 @@
+domain_registration.admin_form:
+  title: 'Domain registration'
+  base_route_name: domain_registration.admin_form
+  names:
+    - domain_registration.settings

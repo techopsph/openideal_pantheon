@@ -1,3 +1,5 @@
+var _excluded = ["tag", "children", "className", "swiper", "zoom", "virtualIndex"];
+
 function _extends() { _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; }; return _extends.apply(this, arguments); }
 
 function _objectWithoutPropertiesLoose(source, excluded) { if (source == null) return {}; var target = {}; var sourceKeys = Object.keys(source); var key, i; for (i = 0; i < sourceKeys.length; i++) { key = sourceKeys[i]; if (excluded.indexOf(key) >= 0) continue; target[key] = source[key]; } return target; }
@@ -15,7 +17,7 @@ var SwiperSlide = /*#__PURE__*/forwardRef(function (_temp, externalRef) {
       swiper = _ref.swiper,
       zoom = _ref.zoom,
       virtualIndex = _ref.virtualIndex,
-      rest = _objectWithoutPropertiesLoose(_ref, ["tag", "children", "className", "swiper", "zoom", "virtualIndex"]);
+      rest = _objectWithoutPropertiesLoose(_ref, _excluded);
 
   var slideElRef = useRef(null);
 

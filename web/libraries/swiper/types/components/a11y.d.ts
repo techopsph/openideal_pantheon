@@ -32,7 +32,7 @@ export interface A11yOptions {
   firstSlideMessage?: string;
 
   /**
-   * Message for screen readers for previous button when swiper is on last slide
+   * Message for screen readers for next button when swiper is on last slide
    *
    * @default 'This is the last slide'
    */
@@ -46,7 +46,7 @@ export interface A11yOptions {
   paginationBulletMessage?: string;
 
   /**
-   * CSS class name of a11 notification
+   * CSS class name of A11y notification
    *
    * @default 'swiper-notification'
    */
@@ -72,4 +72,18 @@ export interface A11yOptions {
    * @default null
    */
   itemRoleDescriptionMessage?: string | null;
+
+  /**
+   * Message for screen readers describing the label of slide element
+   *
+   * @default '{{index}} / {{slidesLength}}'
+   */
+  slideLabelMessage?: string;
+
+  /**
+   * Value of swiper slide `role` attribute
+   *
+   * @default 'group'
+   */
+  slideRole?: string;
 }

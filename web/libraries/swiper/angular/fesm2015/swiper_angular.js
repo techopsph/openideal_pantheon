@@ -1,13 +1,25 @@
-import { Directive, TemplateRef, Input, EventEmitter, Component, ChangeDetectionStrategy, ViewEncapsulation, NgZone, ElementRef, ChangeDetectorRef, Output, ViewChild, ContentChildren, HostBinding, NgModule } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Directive, TemplateRef, Input, EventEmitter, Component, ChangeDetectionStrategy, ViewEncapsulation, NgZone, ElementRef, ChangeDetectorRef, Inject, PLATFORM_ID, Output, ViewChild, ContentChildren, HostBinding, NgModule } from '@angular/core';
+import { isPlatformBrowser, CommonModule } from '@angular/common';
 import Swiper from 'swiper/core';
 import { Subject, of } from 'rxjs';
 
 function isObject(o) {
-    return typeof o === 'object' && o !== null && o.constructor && o.constructor === Object;
+    return (typeof o === 'object' &&
+        o !== null &&
+        o.constructor &&
+        Object.prototype.toString.call(o).slice(8, -1) === 'Object');
+}
+function isShowEl(val, obj, el) {
+    return ((coerceBooleanProperty(val) === true && obj && !obj.el) ||
+        !(typeof obj !== 'boolean' &&
+            obj.el !== (el === null || el === void 0 ? void 0 : el.nativeElement) &&
+            (typeof obj.el === 'string' || typeof obj.el === 'object')));
 }
 function extend(target, src) {
-    Object.keys(src).forEach((key) => {
+    const noExtend = ['__proto__', 'constructor', 'prototype'];
+    Object.keys(src)
+        .filter((key) => noExtend.indexOf(key) < 0)
+        .forEach((key) => {
         if (typeof target[key] === 'undefined') {
             target[key] = src[key];
             return;
@@ -16,7 +28,10 @@ function extend(target, src) {
             return;
         }
         if (isObject(src[key]) && isObject(target[key]) && Object.keys(src[key]).length > 0) {
-            extend(target[key], src[key]);
+            if (src[key].__swiper__)
+                target[key] = src[key];
+            else
+                extend(target[key], src[key]);
         }
         else {
             target[key] = src[key];
@@ -31,11 +46,10 @@ function setProperty(val, obj = {}) {
     if (isObject(val)) {
         return val;
     }
-    const newValue = coerceBooleanProperty(val);
-    if (newValue === true) {
+    if (coerceBooleanProperty(val) === true) {
         return obj;
     }
-    return newValue;
+    return false;
 }
 
 /* underscore in name -> watch for changes */
@@ -47,7 +61,9 @@ const paramsList = [
     '_speed',
     'cssMode',
     'updateOnWindowResize',
+    'resizeObserver',
     'nested',
+    'focusableElements',
     '_width',
     '_height',
     'preventInteractionOnTransition',
@@ -132,6 +148,9 @@ const paramsList = [
     'slideDuplicatePrevClass',
     'wrapperClass',
     'runCallbacksOnInit',
+    'observer',
+    'observeParents',
+    'observeSlideChildren',
     // modules
     'a11y',
     'autoplay',
@@ -242,11 +261,11 @@ SwiperSlideDirective.propDecorators = {
 };
 
 class SwiperComponent {
-    constructor(zone, elementRef, _changeDetectorRef) {
-        this.zone = zone;
+    constructor(_ngZone, elementRef, _changeDetectorRef, _platformId) {
+        this._ngZone = _ngZone;
         this.elementRef = elementRef;
         this._changeDetectorRef = _changeDetectorRef;
-        this.init = true;
+        this._platformId = _platformId;
         this.slideClass = 'swiper-slide';
         this.wrapperClass = 'swiper-wrapper';
         this.showNavigation = true;
@@ -408,7 +427,6 @@ class SwiperComponent {
         this._activeSlides = new Subject();
         this.containerClasses = 'swiper-container';
         this.slidesChanges = (val) => {
-            var _a;
             this.slides = val.map((slide, index) => {
                 slide.slideIndex = index;
                 slide.classNames = this.slideClass;
@@ -421,49 +439,87 @@ class SwiperComponent {
                 this.prependSlides = of(this.slides.slice(this.slides.length - this.loopedSlides));
                 this.appendSlides = of(this.slides.slice(0, this.loopedSlides));
             }
+            else if (this.swiperRef && this.swiperRef.virtual) {
+                this._ngZone.runOutsideAngular(() => {
+                    this.swiperRef.virtual.slides = this.slides;
+                    this.swiperRef.virtual.update(true);
+                });
+            }
             this._changeDetectorRef.detectChanges();
-            (_a = this.swiperRef) === null || _a === void 0 ? void 0 : _a.update();
         };
         this.style = null;
+        this.updateVirtualSlides = (virtualData) => {
+            // TODO: type virtualData
+            if (!this.swiperRef ||
+                (this.currentVirtualData &&
+                    this.currentVirtualData.from === virtualData.from &&
+                    this.currentVirtualData.to === virtualData.to &&
+                    this.currentVirtualData.offset === virtualData.offset)) {
+                return;
+            }
+            this.style = this.swiperRef.isHorizontal()
+                ? {
+                    [this.swiperRef.rtlTranslate ? 'right' : 'left']: `${virtualData.offset}px`,
+                }
+                : {
+                    top: `${virtualData.offset}px`,
+                };
+            this.currentVirtualData = virtualData;
+            this._activeSlides.next(virtualData.slides);
+            this._ngZone.run(() => {
+                this._changeDetectorRef.detectChanges();
+            });
+            this._ngZone.runOutsideAngular(() => {
+                this.swiperRef.updateSlides();
+                this.swiperRef.updateProgress();
+                this.swiperRef.updateSlidesClasses();
+                if (this.swiperRef.lazy && this.swiperRef.params.lazy['enabled']) {
+                    this.swiperRef.lazy.load();
+                }
+                this.swiperRef.virtual.update(true);
+            });
+            return;
+        };
     }
     set navigation(val) {
-        var _a, _b, _c, _d;
+        var _a, _b, _c;
         const currentNext = typeof this._navigation !== 'boolean' ? (_a = this._navigation) === null || _a === void 0 ? void 0 : _a.nextEl : null;
         const currentPrev = typeof this._navigation !== 'boolean' ? (_b = this._navigation) === null || _b === void 0 ? void 0 : _b.prevEl : null;
         this._navigation = setProperty(val, {
             nextEl: currentNext || null,
             prevEl: currentPrev || null,
         });
-        if (typeof this._navigation !== 'boolean' &&
-            (typeof ((_c = this._navigation) === null || _c === void 0 ? void 0 : _c.nextEl) === 'string' || typeof ((_d = this._navigation) === null || _d === void 0 ? void 0 : _d.prevEl) === 'string')) {
-            this.showNavigation = false;
-        }
+        this.showNavigation = !(coerceBooleanProperty(val) !== true ||
+            (this._navigation &&
+                typeof this._navigation !== 'boolean' &&
+                this._navigation.prevEl !== ((_c = this._prevElRef) === null || _c === void 0 ? void 0 : _c.nativeElement) &&
+                (this._navigation.prevEl !== null || this._navigation.nextEl !== null) &&
+                (typeof this._navigation.nextEl === 'string' ||
+                    typeof this._navigation.prevEl === 'string' ||
+                    typeof this._navigation.nextEl === 'object' ||
+                    typeof this._navigation.prevEl === 'object')));
     }
     get navigation() {
         return this._navigation;
     }
     set pagination(val) {
-        var _a, _b;
+        var _a;
         const current = typeof this._pagination !== 'boolean' ? (_a = this._pagination) === null || _a === void 0 ? void 0 : _a.el : null;
         this._pagination = setProperty(val, {
             el: current || null,
         });
-        if (typeof this._pagination !== 'boolean' && typeof ((_b = this._pagination) === null || _b === void 0 ? void 0 : _b.el) === 'string') {
-            this.showPagination = false;
-        }
+        this.showPagination = isShowEl(val, this._pagination, this._paginationElRef);
     }
     get pagination() {
         return this._pagination;
     }
     set scrollbar(val) {
-        var _a, _b;
+        var _a;
         const current = typeof this._scrollbar !== 'boolean' ? (_a = this._scrollbar) === null || _a === void 0 ? void 0 : _a.el : null;
         this._scrollbar = setProperty(val, {
             el: current || null,
         });
-        if (typeof this._scrollbar !== 'boolean' && typeof ((_b = this._scrollbar) === null || _b === void 0 ? void 0 : _b.el) === 'string') {
-            this.showScrollbar = false;
-        }
+        this.showScrollbar = isShowEl(val, this._scrollbar, this._scrollbarElRef);
     }
     get scrollbar() {
         return this._scrollbar;
@@ -483,15 +539,19 @@ class SwiperComponent {
         Object.assign(this, params);
     }
     set prevElRef(el) {
+        this._prevElRef = el;
         this._setElement(el, this.navigation, 'navigation', 'prevEl');
     }
     set nextElRef(el) {
+        this._nextElRef = el;
         this._setElement(el, this.navigation, 'navigation', 'nextEl');
     }
     set scrollbarElRef(el) {
+        this._scrollbarElRef = el;
         this._setElement(el, this.scrollbar, 'scrollbar');
     }
     set paginationElRef(el) {
+        this._paginationElRef = el;
         this._setElement(el, this.pagination, 'pagination');
     }
     get activeSlides() {
@@ -523,10 +583,11 @@ class SwiperComponent {
     }
     ngAfterViewInit() {
         this.childrenSlidesInit();
-        if (this.init) {
-            this.initSwiper();
-            this._changeDetectorRef.detectChanges();
-        }
+        this.initSwiper();
+        this._changeDetectorRef.detectChanges();
+        setTimeout(() => {
+            this.s_swiper.emit(this.swiperRef);
+        });
     }
     childrenSlidesInit() {
         this.slidesChanges(this.slidesEl);
@@ -538,89 +599,67 @@ class SwiperComponent {
     initSwiper() {
         const { params: swiperParams, passedParams } = getParams(this);
         Object.assign(this, swiperParams);
-        swiperParams.onAny = (event, ...args) => {
-            const emitter = this[`s_${event}`];
-            if (emitter) {
-                emitter.emit(...args);
+        this._ngZone.runOutsideAngular(() => {
+            swiperParams.init = false;
+            if (!swiperParams.virtual) {
+                swiperParams.observer = true;
             }
-        };
-        Object.assign(swiperParams.on, {
-            slideChange: () => {
-                this.indexChange.emit(this.swiperRef.realIndex);
-            },
-            _containerClasses(swiper, classes) {
-                this.containerClasses = classes;
-            },
-            _swiper: (swiper) => {
-                this.swiperRef = swiper;
-                this.s_swiper.emit(this.swiperRef);
-                swiper.loopCreate = () => { };
-                swiper.loopDestroy = () => { };
-                if (swiperParams.loop) {
-                    swiper.loopedSlides = this.loopedSlides;
+            swiperParams.onAny = (event, ...args) => {
+                const emitter = this[`s_${event}`];
+                if (emitter) {
+                    emitter.emit(...args);
                 }
-                if (swiper.virtual && swiper.params.virtual.enabled) {
-                    swiper.virtual.slides = this.slides;
-                    const extendWith = {
-                        cache: false,
-                        renderExternal: (data) => {
-                            this.updateVirtualSlides(data);
-                        },
-                        renderExternalUpdate: false,
-                    };
-                    extend(swiper.params.virtual, extendWith);
-                    extend(swiper.originalParams.virtual, extendWith);
-                }
-                this._changeDetectorRef.detectChanges();
-            },
-            _slideClasses: (_, updated) => {
-                updated.forEach(({ slideEl, classNames }, index) => {
-                    const slideIndex = parseInt(slideEl.getAttribute('data-swiper-slide-index')) || index;
-                    if (this.virtual) {
-                        const virtualSlide = this.slides.find((item) => {
-                            return item.virtualIndex && item.virtualIndex === slideIndex;
-                        });
-                        if (virtualSlide) {
-                            virtualSlide.classNames = classNames;
-                            return;
-                        }
-                    }
-                    if (this.slides[slideIndex]) {
-                        this.slides[slideIndex].classNames = classNames;
-                    }
-                });
-                this._changeDetectorRef.detectChanges();
-            },
-        });
-        new Swiper(this.elementRef.nativeElement, swiperParams);
-    }
-    updateVirtualSlides(virtualData) {
-        // TODO: type virtualData
-        if (!this.swiperRef ||
-            (this.currentVirtualData &&
-                this.currentVirtualData.from === virtualData.from &&
-                this.currentVirtualData.to === virtualData.to &&
-                this.currentVirtualData.offset === virtualData.offset)) {
-            return;
-        }
-        this.style = this.swiperRef.isHorizontal()
-            ? {
-                [this.swiperRef.rtlTranslate ? 'right' : 'left']: `${virtualData.offset}px`,
-            }
-            : {
-                top: `${virtualData.offset}px`,
             };
-        this.currentVirtualData = virtualData;
-        this._activeSlides.next(virtualData.slides);
-        this._changeDetectorRef.detectChanges();
-        this.swiperRef.updateSlides();
-        this.swiperRef.updateProgress();
-        this.swiperRef.updateSlidesClasses();
-        if (this.swiperRef.lazy && this.swiperRef.params.lazy['enabled']) {
-            this.swiperRef.lazy.load();
-        }
-        this.swiperRef.virtual.update(true);
-        return;
+            Object.assign(swiperParams.on, {
+                _containerClasses(swiper, classes) {
+                    this.containerClasses = classes;
+                },
+                _slideClasses: (_, updated) => {
+                    updated.forEach(({ slideEl, classNames }, index) => {
+                        const slideIndex = parseInt(slideEl.getAttribute('data-swiper-slide-index')) || index;
+                        if (this.virtual) {
+                            const virtualSlide = this.slides.find((item) => {
+                                return item.virtualIndex && item.virtualIndex === slideIndex;
+                            });
+                            if (virtualSlide) {
+                                virtualSlide.classNames = classNames;
+                                return;
+                            }
+                        }
+                        if (this.slides[slideIndex]) {
+                            this.slides[slideIndex].classNames = classNames;
+                        }
+                    });
+                    this._changeDetectorRef.detectChanges();
+                },
+            });
+            const swiperRef = new Swiper(swiperParams);
+            swiperRef.loopCreate = () => { };
+            swiperRef.loopDestroy = () => { };
+            if (swiperParams.loop) {
+                swiperRef.loopedSlides = this.loopedSlides;
+            }
+            if (swiperRef.virtual && swiperRef.params.virtual.enabled) {
+                swiperRef.virtual.slides = this.slides;
+                const extendWith = {
+                    cache: false,
+                    renderExternal: this.updateVirtualSlides,
+                    renderExternalUpdate: false,
+                };
+                extend(swiperRef.params.virtual, extendWith);
+                extend(swiperRef.originalParams.virtual, extendWith);
+            }
+            if (isPlatformBrowser(this._platformId)) {
+                this.swiperRef = swiperRef.init(this.elementRef.nativeElement);
+                if (this.swiperRef.virtual && this.swiperRef.params.virtual.enabled) {
+                    this.swiperRef.virtual.update(true);
+                }
+                this._changeDetectorRef.detectChanges();
+                swiperRef.on('slideChange', () => {
+                    this.indexChange.emit(this.swiperRef.realIndex);
+                });
+            }
+        });
     }
     ngOnChanges(changedParams) {
         this.updateSwiper(changedParams);
@@ -630,100 +669,107 @@ class SwiperComponent {
         if (!(changedParams && this.swiperRef && !this.swiperRef.destroyed)) {
             return;
         }
-        const { params: currentParams, pagination, navigation, scrollbar, virtual, thumbs, } = this.swiperRef;
-        if (changedParams.pagination) {
-            if (this.pagination &&
-                typeof this.pagination !== 'boolean' &&
-                this.pagination.el &&
-                pagination &&
-                !pagination.el) {
-                this.updateParameter('pagination', this.pagination);
-                pagination.init();
-                pagination.render();
-                pagination.update();
+        this._ngZone.runOutsideAngular(() => {
+            const { params: currentParams, pagination, navigation, scrollbar, virtual, thumbs, } = this.swiperRef;
+            if (changedParams.pagination) {
+                if (this.pagination &&
+                    typeof this.pagination !== 'boolean' &&
+                    this.pagination.el &&
+                    pagination &&
+                    !pagination.el) {
+                    this.updateParameter('pagination', this.pagination);
+                    pagination.init();
+                    pagination.render();
+                    pagination.update();
+                }
+                else {
+                    pagination.destroy();
+                    pagination.el = null;
+                }
             }
-            else {
-                pagination.destroy();
-                pagination.el = null;
+            if (changedParams.scrollbar) {
+                if (this.scrollbar &&
+                    typeof this.scrollbar !== 'boolean' &&
+                    this.scrollbar.el &&
+                    scrollbar &&
+                    !scrollbar.el) {
+                    this.updateParameter('scrollbar', this.scrollbar);
+                    scrollbar.init();
+                    scrollbar.updateSize();
+                    scrollbar.setTranslate();
+                }
+                else {
+                    scrollbar.destroy();
+                    scrollbar.el = null;
+                }
             }
-        }
-        if (changedParams.scrollbar) {
-            if (this.scrollbar &&
-                typeof this.scrollbar !== 'boolean' &&
-                this.scrollbar.el &&
-                scrollbar &&
-                !scrollbar.el) {
-                this.updateParameter('scrollbar', this.scrollbar);
-                scrollbar.init();
-                scrollbar.updateSize();
-                scrollbar.setTranslate();
+            if (changedParams.navigation) {
+                if (this.navigation &&
+                    typeof this.navigation !== 'boolean' &&
+                    this.navigation.prevEl &&
+                    this.navigation.nextEl &&
+                    navigation &&
+                    !navigation.prevEl &&
+                    !navigation.nextEl) {
+                    this.updateParameter('navigation', this.navigation);
+                    navigation.init();
+                    navigation.update();
+                }
+                else if (navigation.prevEl && navigation.nextEl) {
+                    navigation.destroy();
+                    navigation.nextEl = null;
+                    navigation.prevEl = null;
+                }
             }
-            else {
-                scrollbar.destroy();
-                scrollbar.el = null;
+            if (changedParams.thumbs && this.thumbs && this.thumbs.swiper) {
+                this.updateParameter('thumbs', this.thumbs);
+                const initialized = thumbs.init();
+                if (initialized)
+                    thumbs.update(true);
             }
-        }
-        if (changedParams.navigation) {
-            if (this.navigation &&
-                typeof this.navigation !== 'boolean' &&
-                this.navigation.prevEl &&
-                this.navigation.nextEl &&
-                navigation &&
-                !navigation.prevEl &&
-                !navigation.nextEl) {
-                this.updateParameter('navigation', this.navigation);
-                navigation.init();
-                navigation.update();
+            if (changedParams.controller && this.controller && this.controller.control) {
+                this.swiperRef.controller.control = this.controller.control;
             }
-            else if (navigation.prevEl && navigation.nextEl) {
-                navigation.destroy();
-                navigation.nextEl = null;
-                navigation.prevEl = null;
-            }
-        }
-        if (changedParams.thumbs && this.thumbs && this.thumbs.swiper) {
-            this.updateParameter('thumbs', this.thumbs);
-            const initialized = thumbs.init();
-            if (initialized)
-                thumbs.update(true);
-        }
-        if (changedParams.controller && this.controller && this.controller.control) {
-            this.swiperRef.controller.control = this.controller.control;
-        }
-        this.swiperRef.update();
+            this.swiperRef.update();
+        });
     }
     updateSwiper(changedParams) {
-        var _a, _b;
-        if (changedParams.config) {
-            return;
-        }
-        if (!(changedParams && this.swiperRef && !this.swiperRef.destroyed)) {
-            return;
-        }
-        for (const key in changedParams) {
-            if (ignoreNgOnChanges.indexOf(key) >= 0) {
-                continue;
+        this._ngZone.runOutsideAngular(() => {
+            var _a, _b;
+            if (changedParams.config) {
+                return;
             }
-            const newValue = (_b = (_a = changedParams[key]) === null || _a === void 0 ? void 0 : _a.currentValue) !== null && _b !== void 0 ? _b : changedParams[key];
-            this.updateParameter(key, newValue);
-        }
-        if (changedParams.allowSlideNext) {
-            this.swiperRef.allowSlideNext = this.allowSlideNext;
-        }
-        if (changedParams.allowSlidePrev) {
-            this.swiperRef.allowSlidePrev = this.allowSlidePrev;
-        }
-        if (changedParams.direction) {
-            this.swiperRef.changeDirection(this.direction, false);
-        }
-        if (changedParams.breakpoints) {
-            if (this.loop && !this.loopedSlides) {
-                this.calcLoopedSlides();
+            if (!(changedParams && this.swiperRef && !this.swiperRef.destroyed)) {
+                return;
             }
-            this.swiperRef.currentBreakpoint = null;
-            this.swiperRef.setBreakpoint();
-        }
-        this.swiperRef.update();
+            for (const key in changedParams) {
+                if (ignoreNgOnChanges.indexOf(key) >= 0) {
+                    continue;
+                }
+                const newValue = (_b = (_a = changedParams[key]) === null || _a === void 0 ? void 0 : _a.currentValue) !== null && _b !== void 0 ? _b : changedParams[key];
+                this.updateParameter(key, newValue);
+            }
+            if (changedParams.allowSlideNext) {
+                this.swiperRef.allowSlideNext = this.allowSlideNext;
+            }
+            if (changedParams.allowSlidePrev) {
+                this.swiperRef.allowSlidePrev = this.allowSlidePrev;
+            }
+            if (changedParams.direction) {
+                this.swiperRef.changeDirection(this.direction, false);
+            }
+            if (changedParams.breakpoints) {
+                if (this.loop && !this.loopedSlides) {
+                    this.calcLoopedSlides();
+                }
+                this.swiperRef.currentBreakpoint = null;
+                this.swiperRef.setBreakpoint();
+            }
+            if (changedParams.thumbs || changedParams.controller) {
+                this.updateInitSwiper(changedParams);
+            }
+            this.swiperRef.update();
+        });
     }
     calcLoopedSlides() {
         if (!this.loop) {
@@ -754,10 +800,17 @@ class SwiperComponent {
             return;
         }
         const _key = key.replace(/^_/, '');
+        const isCurrentParamObj = isObject(this.swiperRef.params[_key]);
         if (Object.keys(this.swiperRef.modules).indexOf(_key) >= 0) {
-            extend(value, this.swiperRef.modules[_key].params[_key]);
+            const defaultParams = this.swiperRef.modules[_key].params[_key];
+            if (isCurrentParamObj) {
+                extend(this.swiperRef.params[_key], defaultParams);
+            }
+            else {
+                this.swiperRef.params[_key] = defaultParams;
+            }
         }
-        if (isObject(this.swiperRef.params[_key]) && isObject(value)) {
+        if (isCurrentParamObj && isObject(value)) {
             extend(this.swiperRef.params[_key], value);
         }
         else {
@@ -772,7 +825,7 @@ class SwiperComponent {
         if (index === this.swiperRef.activeIndex) {
             return;
         }
-        this.zone.runOutsideAngular(() => {
+        this._ngZone.runOutsideAngular(() => {
             if (this.loop) {
                 this.swiperRef.slideToLoop(index, speed, !silent);
             }
@@ -782,14 +835,16 @@ class SwiperComponent {
         });
     }
     ngOnDestroy() {
-        var _a;
-        (_a = this.swiperRef) === null || _a === void 0 ? void 0 : _a.destroy();
+        this._ngZone.runOutsideAngular(() => {
+            var _a;
+            (_a = this.swiperRef) === null || _a === void 0 ? void 0 : _a.destroy(true, false);
+        });
     }
 }
 SwiperComponent.decorators = [
     { type: Component, args: [{
                 selector: 'swiper, [swiper]',
-                template: "<ng-content select=\"[slot=container-start]\"></ng-content>\n<ng-container *ngIf=\"navigation && showNavigation\">\n  <div class=\"swiper-button-prev\" #prevElRef></div>\n  <div class=\"swiper-button-next\" #nextElRef></div>\n</ng-container>\n<div *ngIf=\"scrollbar && showScrollbar\" class=\"swiper-scrollbar\" #scrollbarElRef></div>\n<div *ngIf=\"pagination && showPagination\" class=\"swiper-pagination\" #paginationElRef></div>\n<div [ngClass]=\"wrapperClass\">\n  <ng-content select=\"[slot=wrapper-start]\"></ng-content>\n  <ng-template\n    *ngTemplateOutlet=\"\n      slidesTemplate;\n      context: {\n        loopSlides: prependSlides,\n        key: 'prepend'\n      }\n    \"\n  ></ng-template>\n  <ng-template\n    *ngTemplateOutlet=\"\n      slidesTemplate;\n      context: {\n        loopSlides: activeSlides,\n        key: ''\n      }\n    \"\n  ></ng-template>\n  <ng-template\n    *ngTemplateOutlet=\"\n      slidesTemplate;\n      context: {\n        loopSlides: appendSlides,\n        key: 'append'\n      }\n    \"\n  ></ng-template>\n  <ng-content select=\"[slot=wrapper-end]\"></ng-content>\n</div>\n<ng-content select=\"[slot=container-end]\"></ng-content>\n\n<ng-template #slidesTemplate let-loopSlides=\"loopSlides\" let-slideKey=\"key\">\n  <div\n    *ngFor=\"let slide of loopSlides | async\"\n    [ngClass]=\"\n      (slide.class ? slide.class + ' ' : '') +\n      slideClass +\n      (slideKey !== '' ? ' ' + slideDuplicateClass : '')\n    \"\n    [attr.data-swiper-slide-index]=\"slide.virtualIndex ? slide.virtualIndex : slide.slideIndex\"\n    [style]=\"style\"\n    [ngSwitch]=\"slide.zoom\"\n  >\n    <div *ngSwitchCase=\"true\" [ngClass]=\"zoomContainerClass\">\n      <ng-template\n        [ngTemplateOutlet]=\"slide.template\"\n        [ngTemplateOutletContext]=\"{\n          $implicit: slide.slideData\n        }\"\n      ></ng-template>\n    </div>\n    <ng-container *ngSwitchDefault>\n      <ng-template\n        [ngTemplateOutlet]=\"slide.template\"\n        [ngTemplateOutletContext]=\"{\n          $implicit: slide.slideData\n        }\"\n      ></ng-template>\n    </ng-container>\n  </div>\n</ng-template>\n",
+                template: "<ng-content select=\"[slot=container-start]\"></ng-content>\n<ng-container *ngIf=\"navigation && showNavigation\">\n  <div class=\"swiper-button-prev\" #prevElRef></div>\n  <div class=\"swiper-button-next\" #nextElRef></div>\n</ng-container>\n<div *ngIf=\"scrollbar && showScrollbar\" class=\"swiper-scrollbar\" #scrollbarElRef></div>\n<div *ngIf=\"pagination && showPagination\" class=\"swiper-pagination\" #paginationElRef></div>\n<div [ngClass]=\"wrapperClass\" [attr.id]=\"id\">\n  <ng-content select=\"[slot=wrapper-start]\"></ng-content>\n  <ng-template *ngTemplateOutlet=\"\n      slidesTemplate;\n      context: {\n        loopSlides: prependSlides,\n        key: 'prepend'\n      }\n    \"></ng-template>\n  <ng-template *ngTemplateOutlet=\"\n      slidesTemplate;\n      context: {\n        loopSlides: activeSlides,\n        key: ''\n      }\n    \"></ng-template>\n  <ng-template *ngTemplateOutlet=\"\n      slidesTemplate;\n      context: {\n        loopSlides: appendSlides,\n        key: 'append'\n      }\n    \"></ng-template>\n  <ng-content select=\"[slot=wrapper-end]\"></ng-content>\n</div>\n<ng-content select=\"[slot=container-end]\"></ng-content>\n\n<ng-template #slidesTemplate let-loopSlides=\"loopSlides\" let-slideKey=\"key\">\n  <div *ngFor=\"let slide of loopSlides | async\" [ngClass]=\"\n      (slide.class ? slide.class + ' ' : '') +\n      slideClass +\n      (slideKey !== '' ? ' ' + slideDuplicateClass : '')\n    \" [attr.data-swiper-slide-index]=\"slide.virtualIndex ? slide.virtualIndex : slide.slideIndex\" [style]=\"style\"\n    [ngSwitch]=\"slide.zoom\">\n    <div *ngSwitchCase=\"true\" [ngClass]=\"zoomContainerClass\">\n      <ng-template [ngTemplateOutlet]=\"slide.template\" [ngTemplateOutletContext]=\"{\n          $implicit: slide.slideData\n        }\"></ng-template>\n    </div>\n    <ng-container *ngSwitchDefault>\n      <ng-template [ngTemplateOutlet]=\"slide.template\" [ngTemplateOutletContext]=\"{\n          $implicit: slide.slideData\n        }\"></ng-template>\n    </ng-container>\n  </div>\n</ng-template>\n",
                 changeDetection: ChangeDetectionStrategy.OnPush,
                 encapsulation: ViewEncapsulation.None,
                 styles: [`
@@ -802,17 +857,19 @@ SwiperComponent.decorators = [
 SwiperComponent.ctorParameters = () => [
     { type: NgZone },
     { type: ElementRef },
-    { type: ChangeDetectorRef }
+    { type: ChangeDetectorRef },
+    { type: undefined, decorators: [{ type: Inject, args: [PLATFORM_ID,] }] }
 ];
 SwiperComponent.propDecorators = {
-    init: [{ type: Input }],
     direction: [{ type: Input }],
     touchEventsTarget: [{ type: Input }],
     initialSlide: [{ type: Input }],
     speed: [{ type: Input }],
     cssMode: [{ type: Input }],
     updateOnWindowResize: [{ type: Input }],
+    resizeObserver: [{ type: Input }],
     nested: [{ type: Input }],
+    focusableElements: [{ type: Input }],
     width: [{ type: Input }],
     height: [{ type: Input }],
     preventInteractionOnTransition: [{ type: Input }],
@@ -897,6 +954,8 @@ SwiperComponent.propDecorators = {
     slideDuplicatePrevClass: [{ type: Input }],
     wrapperClass: [{ type: Input }],
     runCallbacksOnInit: [{ type: Input }],
+    observeParents: [{ type: Input }],
+    observeSlideChildren: [{ type: Input }],
     a11y: [{ type: Input }],
     autoplay: [{ type: Input }],
     controller: [{ type: Input }],
@@ -912,6 +971,8 @@ SwiperComponent.propDecorators = {
     parallax: [{ type: Input }],
     thumbs: [{ type: Input }],
     zoom: [{ type: Input }],
+    class: [{ type: Input }],
+    id: [{ type: Input }],
     navigation: [{ type: Input }],
     pagination: [{ type: Input }],
     scrollbar: [{ type: Input }],
@@ -999,7 +1060,7 @@ SwiperComponent.propDecorators = {
     nextElRef: [{ type: ViewChild, args: ['nextElRef', { static: false },] }],
     scrollbarElRef: [{ type: ViewChild, args: ['scrollbarElRef', { static: false },] }],
     paginationElRef: [{ type: ViewChild, args: ['paginationElRef', { static: false },] }],
-    slidesEl: [{ type: ContentChildren, args: [SwiperSlideDirective, { descendants: true, emitDistinctChangesOnly: true },] }],
+    slidesEl: [{ type: ContentChildren, args: [SwiperSlideDirective, { descendants: false, emitDistinctChangesOnly: true },] }],
     containerClasses: [{ type: HostBinding, args: ['class',] }]
 };
 

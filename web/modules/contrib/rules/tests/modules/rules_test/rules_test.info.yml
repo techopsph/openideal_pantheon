@@ -4,3 +4,8 @@ description: 'Support module for the Rules tests.'
 package: Testing
 dependencies:
   - rules:rules
+
+# Information added by Drupal.org packaging script on 2021-12-03
+version: '8.x-3.0-alpha7'
+project: 'rules'
+datestamp: 1638574148

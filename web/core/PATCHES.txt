@@ -5,6 +5,10 @@ Combined Fields Filter does not work with body summary
 Source: https://www.drupal.org/files/issues/2020-08-28/3049502-27.patch
 
 
+Multiple usages of FieldPluginBase::getEntity do not check for NULL, leading to WSOD
+Source: https://www.drupal.org/files/issues/2020-09-03/3007424-108.patch
+
+
 Add visibility control conditions to blocks within Layout Builder
 Source: https://www.drupal.org/files/issues/2020-06-23/2916876-92.patch
 

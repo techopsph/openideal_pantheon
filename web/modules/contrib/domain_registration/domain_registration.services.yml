@@ -1,0 +1,4 @@
+services:
+  domain_registration.pattern:
+    class: Drupal\domain_registration\DomainRegistrationPattern
+    arguments: ['@config.factory']

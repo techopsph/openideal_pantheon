@@ -4,10 +4,10 @@
     "description": "Voting API",
     "keywords": ["Drupal"],
     "license": "GPL-2.0-or-later",
-    "homepage": "http://www.drupal.org/project/votingapi",
+    "homepage": "https://www.drupal.org/project/votingapi",
     "support": {
-      "issues": "http://drupal.org/project/issues/votingapi",
-      "source": "http://cgit.drupalcode.org/votingapi"
+      "issues": "https://drupal.org/project/issues/votingapi",
+      "source": "https://git.drupalcode.org/project/votingapi"
     },
     "require-dev": {
       "drupal/token": "^1.5"

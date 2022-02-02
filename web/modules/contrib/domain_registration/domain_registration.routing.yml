@@ -1,0 +1,7 @@
+domain_registration.admin_form:
+  path: /admin/config/system/domain_register
+  defaults:
+    _title: 'Domain registration'
+    _form: \Drupal\domain_registration\Form\DomainRegistrationAdminForm
+  requirements:
+    _permission: 'administer domain registration'

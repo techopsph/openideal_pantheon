@@ -234,10 +234,16 @@
                 r[k] = a[j];
         return r;
     }
-    function __spreadArray(to, from) {
-        for (var i = 0, il = from.length, j = to.length; i < il; i++, j++)
-            to[j] = from[i];
-        return to;
+    function __spreadArray(to, from, pack) {
+        if (pack || arguments.length === 2)
+            for (var i = 0, l = from.length, ar; i < l; i++) {
+                if (ar || !(i in from)) {
+                    if (!ar)
+                        ar = Array.prototype.slice.call(from, 0, i);
+                    ar[i] = from[i];
+                }
+            }
+        return to.concat(ar || from);
     }
     function __await(v) {
         return this instanceof __await ? (this.v = v, this) : new __await(v);
@@ -303,25 +309,40 @@
     function __importDefault(mod) {
         return (mod && mod.__esModule) ? mod : { default: mod };
     }
-    function __classPrivateFieldGet(receiver, privateMap) {
-        if (!privateMap.has(receiver)) {
-            throw new TypeError("attempted to get private field on non-instance");
-        }
-        return privateMap.get(receiver);
+    function __classPrivateFieldGet(receiver, state, kind, f) {
+        if (kind === "a" && !f)
+            throw new TypeError("Private accessor was defined without a getter");
+        if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver))
+            throw new TypeError("Cannot read private member from an object whose class did not declare it");
+        return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
     }
-    function __classPrivateFieldSet(receiver, privateMap, value) {
-        if (!privateMap.has(receiver)) {
-            throw new TypeError("attempted to set private field on non-instance");
-        }
-        privateMap.set(receiver, value);
-        return value;
+    function __classPrivateFieldSet(receiver, state, value, kind, f) {
+        if (kind === "m")
+            throw new TypeError("Private method is not writable");
+        if (kind === "a" && !f)
+            throw new TypeError("Private accessor was defined without a setter");
+        if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver))
+            throw new TypeError("Cannot write private member to an object whose class did not declare it");
+        return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
     }
 
     function isObject(o) {
-        return typeof o === 'object' && o !== null && o.constructor && o.constructor === Object;
+        return (typeof o === 'object' &&
+            o !== null &&
+            o.constructor &&
+            Object.prototype.toString.call(o).slice(8, -1) === 'Object');
+    }
+    function isShowEl(val, obj, el) {
+        return ((coerceBooleanProperty(val) === true && obj && !obj.el) ||
+            !(typeof obj !== 'boolean' &&
+                obj.el !== (el === null || el === void 0 ? void 0 : el.nativeElement) &&
+                (typeof obj.el === 'string' || typeof obj.el === 'object')));
     }
     function extend(target, src) {
-        Object.keys(src).forEach(function (key) {
+        var noExtend = ['__proto__', 'constructor', 'prototype'];
+        Object.keys(src)
+            .filter(function (key) { return noExtend.indexOf(key) < 0; })
+            .forEach(function (key) {
             if (typeof target[key] === 'undefined') {
                 target[key] = src[key];
                 return;
@@ -330,7 +351,10 @@
                 return;
             }
             if (isObject(src[key]) && isObject(target[key]) && Object.keys(src[key]).length > 0) {
-                extend(target[key], src[key]);
+                if (src[key].__swiper__)
+                    target[key] = src[key];
+                else
+                    extend(target[key], src[key]);
             }
             else {
                 target[key] = src[key];
@@ -346,11 +370,10 @@
         if (isObject(val)) {
             return val;
         }
-        var newValue = coerceBooleanProperty(val);
-        if (newValue === true) {
+        if (coerceBooleanProperty(val) === true) {
             return obj;
         }
-        return newValue;
+        return false;
     }
 
     /* underscore in name -> watch for changes */
@@ -362,7 +385,9 @@
         '_speed',
         'cssMode',
         'updateOnWindowResize',
+        'resizeObserver',
         'nested',
+        'focusableElements',
         '_width',
         '_height',
         'preventInteractionOnTransition',
@@ -447,6 +472,9 @@
         'slideDuplicatePrevClass',
         'wrapperClass',
         'runCallbacksOnInit',
+        'observer',
+        'observeParents',
+        'observeSlideChildren',
         // modules
         'a11y',
         'autoplay',
@@ -568,12 +596,12 @@
     };
 
     var SwiperComponent = /** @class */ (function () {
-        function SwiperComponent(zone, elementRef, _changeDetectorRef) {
+        function SwiperComponent(_ngZone, elementRef, _changeDetectorRef, _platformId) {
             var _this = this;
-            this.zone = zone;
+            this._ngZone = _ngZone;
             this.elementRef = elementRef;
             this._changeDetectorRef = _changeDetectorRef;
-            this.init = true;
+            this._platformId = _platformId;
             this.slideClass = 'swiper-slide';
             this.wrapperClass = 'swiper-wrapper';
             this.showNavigation = true;
@@ -735,7 +763,6 @@
             this._activeSlides = new rxjs.Subject();
             this.containerClasses = 'swiper-container';
             this.slidesChanges = function (val) {
-                var _a;
                 _this.slides = val.map(function (slide, index) {
                     slide.slideIndex = index;
                     slide.classNames = _this.slideClass;
@@ -748,27 +775,69 @@
                     _this.prependSlides = rxjs.of(_this.slides.slice(_this.slides.length - _this.loopedSlides));
                     _this.appendSlides = rxjs.of(_this.slides.slice(0, _this.loopedSlides));
                 }
+                else if (_this.swiperRef && _this.swiperRef.virtual) {
+                    _this._ngZone.runOutsideAngular(function () {
+                        _this.swiperRef.virtual.slides = _this.slides;
+                        _this.swiperRef.virtual.update(true);
+                    });
+                }
                 _this._changeDetectorRef.detectChanges();
-                (_a = _this.swiperRef) === null || _a === void 0 ? void 0 : _a.update();
             };
             this.style = null;
+            this.updateVirtualSlides = function (virtualData) {
+                var _d;
+                // TODO: type virtualData
+                if (!_this.swiperRef ||
+                    (_this.currentVirtualData &&
+                        _this.currentVirtualData.from === virtualData.from &&
+                        _this.currentVirtualData.to === virtualData.to &&
+                        _this.currentVirtualData.offset === virtualData.offset)) {
+                    return;
+                }
+                _this.style = _this.swiperRef.isHorizontal()
+                    ? (_d = {},
+                        _d[_this.swiperRef.rtlTranslate ? 'right' : 'left'] = virtualData.offset + "px",
+                        _d) : {
+                    top: virtualData.offset + "px",
+                };
+                _this.currentVirtualData = virtualData;
+                _this._activeSlides.next(virtualData.slides);
+                _this._ngZone.run(function () {
+                    _this._changeDetectorRef.detectChanges();
+                });
+                _this._ngZone.runOutsideAngular(function () {
+                    _this.swiperRef.updateSlides();
+                    _this.swiperRef.updateProgress();
+                    _this.swiperRef.updateSlidesClasses();
+                    if (_this.swiperRef.lazy && _this.swiperRef.params.lazy['enabled']) {
+                        _this.swiperRef.lazy.load();
+                    }
+                    _this.swiperRef.virtual.update(true);
+                });
+                return;
+            };
         }
         Object.defineProperty(SwiperComponent.prototype, "navigation", {
             get: function () {
                 return this._navigation;
             },
             set: function (val) {
-                var _a, _b, _c, _d;
+                var _a, _b, _c;
                 var currentNext = typeof this._navigation !== 'boolean' ? (_a = this._navigation) === null || _a === void 0 ? void 0 : _a.nextEl : null;
                 var currentPrev = typeof this._navigation !== 'boolean' ? (_b = this._navigation) === null || _b === void 0 ? void 0 : _b.prevEl : null;
                 this._navigation = setProperty(val, {
                     nextEl: currentNext || null,
                     prevEl: currentPrev || null,
                 });
-                if (typeof this._navigation !== 'boolean' &&
-                    (typeof ((_c = this._navigation) === null || _c === void 0 ? void 0 : _c.nextEl) === 'string' || typeof ((_d = this._navigation) === null || _d === void 0 ? void 0 : _d.prevEl) === 'string')) {
-                    this.showNavigation = false;
-                }
+                this.showNavigation = !(coerceBooleanProperty(val) !== true ||
+                    (this._navigation &&
+                        typeof this._navigation !== 'boolean' &&
+                        this._navigation.prevEl !== ((_c = this._prevElRef) === null || _c === void 0 ? void 0 : _c.nativeElement) &&
+                        (this._navigation.prevEl !== null || this._navigation.nextEl !== null) &&
+                        (typeof this._navigation.nextEl === 'string' ||
+                            typeof this._navigation.prevEl === 'string' ||
+                            typeof this._navigation.nextEl === 'object' ||
+                            typeof this._navigation.prevEl === 'object')));
             },
             enumerable: false,
             configurable: true
@@ -778,14 +847,12 @@
                 return this._pagination;
             },
             set: function (val) {
-                var _a, _b;
+                var _a;
                 var current = typeof this._pagination !== 'boolean' ? (_a = this._pagination) === null || _a === void 0 ? void 0 : _a.el : null;
                 this._pagination = setProperty(val, {
                     el: current || null,
                 });
-                if (typeof this._pagination !== 'boolean' && typeof ((_b = this._pagination) === null || _b === void 0 ? void 0 : _b.el) === 'string') {
-                    this.showPagination = false;
-                }
+                this.showPagination = isShowEl(val, this._pagination, this._paginationElRef);
             },
             enumerable: false,
             configurable: true
@@ -795,14 +862,12 @@
                 return this._scrollbar;
             },
             set: function (val) {
-                var _a, _b;
+                var _a;
                 var current = typeof this._scrollbar !== 'boolean' ? (_a = this._scrollbar) === null || _a === void 0 ? void 0 : _a.el : null;
                 this._scrollbar = setProperty(val, {
                     el: current || null,
                 });
-                if (typeof this._scrollbar !== 'boolean' && typeof ((_b = this._scrollbar) === null || _b === void 0 ? void 0 : _b.el) === 'string') {
-                    this.showScrollbar = false;
-                }
+                this.showScrollbar = isShowEl(val, this._scrollbar, this._scrollbarElRef);
             },
             enumerable: false,
             configurable: true
@@ -835,6 +900,7 @@
         });
         Object.defineProperty(SwiperComponent.prototype, "prevElRef", {
             set: function (el) {
+                this._prevElRef = el;
                 this._setElement(el, this.navigation, 'navigation', 'prevEl');
             },
             enumerable: false,
@@ -842,6 +908,7 @@
         });
         Object.defineProperty(SwiperComponent.prototype, "nextElRef", {
             set: function (el) {
+                this._nextElRef = el;
                 this._setElement(el, this.navigation, 'navigation', 'nextEl');
             },
             enumerable: false,
@@ -849,6 +916,7 @@
         });
         Object.defineProperty(SwiperComponent.prototype, "scrollbarElRef", {
             set: function (el) {
+                this._scrollbarElRef = el;
                 this._setElement(el, this.scrollbar, 'scrollbar');
             },
             enumerable: false,
@@ -856,6 +924,7 @@
         });
         Object.defineProperty(SwiperComponent.prototype, "paginationElRef", {
             set: function (el) {
+                this._paginationElRef = el;
                 this._setElement(el, this.pagination, 'pagination');
             },
             enumerable: false,
@@ -898,11 +967,13 @@
             Object.assign(this, params);
         };
         SwiperComponent.prototype.ngAfterViewInit = function () {
+            var _this = this;
             this.childrenSlidesInit();
-            if (this.init) {
-                this.initSwiper();
-                this._changeDetectorRef.detectChanges();
-            }
+            this.initSwiper();
+            this._changeDetectorRef.detectChanges();
+            setTimeout(function () {
+                _this.s_swiper.emit(_this.swiperRef);
+            });
         };
         SwiperComponent.prototype.childrenSlidesInit = function () {
             this.slidesChanges(this.slidesEl);
@@ -917,199 +988,186 @@
         });
         SwiperComponent.prototype.initSwiper = function () {
             var _this = this;
-            var _e = getParams(this), swiperParams = _e.params, passedParams = _e.passedParams;
+            var _d = getParams(this), swiperParams = _d.params, passedParams = _d.passedParams;
             Object.assign(this, swiperParams);
-            swiperParams.onAny = function (event) {
-                var args = [];
-                for (var _i = 1; _i < arguments.length; _i++) {
-                    args[_i - 1] = arguments[_i];
+            this._ngZone.runOutsideAngular(function () {
+                swiperParams.init = false;
+                if (!swiperParams.virtual) {
+                    swiperParams.observer = true;
                 }
-                var emitter = _this["s_" + event];
-                if (emitter) {
-                    emitter.emit.apply(emitter, __spread(args));
-                }
-            };
-            Object.assign(swiperParams.on, {
-                slideChange: function () {
-                    _this.indexChange.emit(_this.swiperRef.realIndex);
-                },
-                _containerClasses: function (swiper, classes) {
-                    this.containerClasses = classes;
-                },
-                _swiper: function (swiper) {
-                    _this.swiperRef = swiper;
-                    _this.s_swiper.emit(_this.swiperRef);
-                    swiper.loopCreate = function () { };
-                    swiper.loopDestroy = function () { };
-                    if (swiperParams.loop) {
-                        swiper.loopedSlides = _this.loopedSlides;
+                swiperParams.onAny = function (event) {
+                    var args = [];
+                    for (var _i = 1; _i < arguments.length; _i++) {
+                        args[_i - 1] = arguments[_i];
                     }
-                    if (swiper.virtual && swiper.params.virtual.enabled) {
-                        swiper.virtual.slides = _this.slides;
-                        var extendWith = {
-                            cache: false,
-                            renderExternal: function (data) {
-                                _this.updateVirtualSlides(data);
-                            },
-                            renderExternalUpdate: false,
-                        };
-                        extend(swiper.params.virtual, extendWith);
-                        extend(swiper.originalParams.virtual, extendWith);
+                    var emitter = _this["s_" + event];
+                    if (emitter) {
+                        emitter.emit.apply(emitter, __spreadArray([], __read(args)));
                     }
-                    _this._changeDetectorRef.detectChanges();
-                },
-                _slideClasses: function (_, updated) {
-                    updated.forEach(function (_e, index) {
-                        var slideEl = _e.slideEl, classNames = _e.classNames;
-                        var slideIndex = parseInt(slideEl.getAttribute('data-swiper-slide-index')) || index;
-                        if (_this.virtual) {
-                            var virtualSlide = _this.slides.find(function (item) {
-                                return item.virtualIndex && item.virtualIndex === slideIndex;
-                            });
-                            if (virtualSlide) {
-                                virtualSlide.classNames = classNames;
-                                return;
+                };
+                Object.assign(swiperParams.on, {
+                    _containerClasses: function (swiper, classes) {
+                        this.containerClasses = classes;
+                    },
+                    _slideClasses: function (_, updated) {
+                        updated.forEach(function (_d, index) {
+                            var slideEl = _d.slideEl, classNames = _d.classNames;
+                            var slideIndex = parseInt(slideEl.getAttribute('data-swiper-slide-index')) || index;
+                            if (_this.virtual) {
+                                var virtualSlide = _this.slides.find(function (item) {
+                                    return item.virtualIndex && item.virtualIndex === slideIndex;
+                                });
+                                if (virtualSlide) {
+                                    virtualSlide.classNames = classNames;
+                                    return;
+                                }
                             }
-                        }
-                        if (_this.slides[slideIndex]) {
-                            _this.slides[slideIndex].classNames = classNames;
-                        }
-                    });
+                            if (_this.slides[slideIndex]) {
+                                _this.slides[slideIndex].classNames = classNames;
+                            }
+                        });
+                        _this._changeDetectorRef.detectChanges();
+                    },
+                });
+                var swiperRef = new Swiper__default['default'](swiperParams);
+                swiperRef.loopCreate = function () { };
+                swiperRef.loopDestroy = function () { };
+                if (swiperParams.loop) {
+                    swiperRef.loopedSlides = _this.loopedSlides;
+                }
+                if (swiperRef.virtual && swiperRef.params.virtual.enabled) {
+                    swiperRef.virtual.slides = _this.slides;
+                    var extendWith = {
+                        cache: false,
+                        renderExternal: _this.updateVirtualSlides,
+                        renderExternalUpdate: false,
+                    };
+                    extend(swiperRef.params.virtual, extendWith);
+                    extend(swiperRef.originalParams.virtual, extendWith);
+                }
+                if (common.isPlatformBrowser(_this._platformId)) {
+                    _this.swiperRef = swiperRef.init(_this.elementRef.nativeElement);
+                    if (_this.swiperRef.virtual && _this.swiperRef.params.virtual.enabled) {
+                        _this.swiperRef.virtual.update(true);
+                    }
                     _this._changeDetectorRef.detectChanges();
-                },
+                    swiperRef.on('slideChange', function () {
+                        _this.indexChange.emit(_this.swiperRef.realIndex);
+                    });
+                }
             });
-            new Swiper__default['default'](this.elementRef.nativeElement, swiperParams);
-        };
-        SwiperComponent.prototype.updateVirtualSlides = function (virtualData) {
-            var _e;
-            // TODO: type virtualData
-            if (!this.swiperRef ||
-                (this.currentVirtualData &&
-                    this.currentVirtualData.from === virtualData.from &&
-                    this.currentVirtualData.to === virtualData.to &&
-                    this.currentVirtualData.offset === virtualData.offset)) {
-                return;
-            }
-            this.style = this.swiperRef.isHorizontal()
-                ? (_e = {},
-                    _e[this.swiperRef.rtlTranslate ? 'right' : 'left'] = virtualData.offset + "px",
-                    _e) : {
-                top: virtualData.offset + "px",
-            };
-            this.currentVirtualData = virtualData;
-            this._activeSlides.next(virtualData.slides);
-            this._changeDetectorRef.detectChanges();
-            this.swiperRef.updateSlides();
-            this.swiperRef.updateProgress();
-            this.swiperRef.updateSlidesClasses();
-            if (this.swiperRef.lazy && this.swiperRef.params.lazy['enabled']) {
-                this.swiperRef.lazy.load();
-            }
-            this.swiperRef.virtual.update(true);
-            return;
         };
         SwiperComponent.prototype.ngOnChanges = function (changedParams) {
             this.updateSwiper(changedParams);
             this._changeDetectorRef.detectChanges();
         };
         SwiperComponent.prototype.updateInitSwiper = function (changedParams) {
+            var _this = this;
             if (!(changedParams && this.swiperRef && !this.swiperRef.destroyed)) {
                 return;
             }
-            var _e = this.swiperRef, currentParams = _e.params, pagination = _e.pagination, navigation = _e.navigation, scrollbar = _e.scrollbar, virtual = _e.virtual, thumbs = _e.thumbs;
-            if (changedParams.pagination) {
-                if (this.pagination &&
-                    typeof this.pagination !== 'boolean' &&
-                    this.pagination.el &&
-                    pagination &&
-                    !pagination.el) {
-                    this.updateParameter('pagination', this.pagination);
-                    pagination.init();
-                    pagination.render();
-                    pagination.update();
+            this._ngZone.runOutsideAngular(function () {
+                var _d = _this.swiperRef, currentParams = _d.params, pagination = _d.pagination, navigation = _d.navigation, scrollbar = _d.scrollbar, virtual = _d.virtual, thumbs = _d.thumbs;
+                if (changedParams.pagination) {
+                    if (_this.pagination &&
+                        typeof _this.pagination !== 'boolean' &&
+                        _this.pagination.el &&
+                        pagination &&
+                        !pagination.el) {
+                        _this.updateParameter('pagination', _this.pagination);
+                        pagination.init();
+                        pagination.render();
+                        pagination.update();
+                    }
+                    else {
+                        pagination.destroy();
+                        pagination.el = null;
+                    }
                 }
-                else {
-                    pagination.destroy();
-                    pagination.el = null;
+                if (changedParams.scrollbar) {
+                    if (_this.scrollbar &&
+                        typeof _this.scrollbar !== 'boolean' &&
+                        _this.scrollbar.el &&
+                        scrollbar &&
+                        !scrollbar.el) {
+                        _this.updateParameter('scrollbar', _this.scrollbar);
+                        scrollbar.init();
+                        scrollbar.updateSize();
+                        scrollbar.setTranslate();
+                    }
+                    else {
+                        scrollbar.destroy();
+                        scrollbar.el = null;
+                    }
                 }
-            }
-            if (changedParams.scrollbar) {
-                if (this.scrollbar &&
-                    typeof this.scrollbar !== 'boolean' &&
-                    this.scrollbar.el &&
-                    scrollbar &&
-                    !scrollbar.el) {
-                    this.updateParameter('scrollbar', this.scrollbar);
-                    scrollbar.init();
-                    scrollbar.updateSize();
-                    scrollbar.setTranslate();
+                if (changedParams.navigation) {
+                    if (_this.navigation &&
+                        typeof _this.navigation !== 'boolean' &&
+                        _this.navigation.prevEl &&
+                        _this.navigation.nextEl &&
+                        navigation &&
+                        !navigation.prevEl &&
+                        !navigation.nextEl) {
+                        _this.updateParameter('navigation', _this.navigation);
+                        navigation.init();
+                        navigation.update();
+                    }
+                    else if (navigation.prevEl && navigation.nextEl) {
+                        navigation.destroy();
+                        navigation.nextEl = null;
+                        navigation.prevEl = null;
+                    }
                 }
-                else {
-                    scrollbar.destroy();
-                    scrollbar.el = null;
+                if (changedParams.thumbs && _this.thumbs && _this.thumbs.swiper) {
+                    _this.updateParameter('thumbs', _this.thumbs);
+                    var initialized = thumbs.init();
+                    if (initialized)
+                        thumbs.update(true);
                 }
-            }
-            if (changedParams.navigation) {
-                if (this.navigation &&
-                    typeof this.navigation !== 'boolean' &&
-                    this.navigation.prevEl &&
-                    this.navigation.nextEl &&
-                    navigation &&
-                    !navigation.prevEl &&
-                    !navigation.nextEl) {
-                    this.updateParameter('navigation', this.navigation);
-                    navigation.init();
-                    navigation.update();
+                if (changedParams.controller && _this.controller && _this.controller.control) {
+                    _this.swiperRef.controller.control = _this.controller.control;
                 }
-                else if (navigation.prevEl && navigation.nextEl) {
-                    navigation.destroy();
-                    navigation.nextEl = null;
-                    navigation.prevEl = null;
-                }
-            }
-            if (changedParams.thumbs && this.thumbs && this.thumbs.swiper) {
-                this.updateParameter('thumbs', this.thumbs);
-                var initialized = thumbs.init();
-                if (initialized)
-                    thumbs.update(true);
-            }
-            if (changedParams.controller && this.controller && this.controller.control) {
-                this.swiperRef.controller.control = this.controller.control;
-            }
-            this.swiperRef.update();
+                _this.swiperRef.update();
+            });
         };
         SwiperComponent.prototype.updateSwiper = function (changedParams) {
-            var _a, _b;
-            if (changedParams.config) {
-                return;
-            }
-            if (!(changedParams && this.swiperRef && !this.swiperRef.destroyed)) {
-                return;
-            }
-            for (var key in changedParams) {
-                if (ignoreNgOnChanges.indexOf(key) >= 0) {
-                    continue;
+            var _this = this;
+            this._ngZone.runOutsideAngular(function () {
+                var _a, _b;
+                if (changedParams.config) {
+                    return;
                 }
-                var newValue = (_b = (_a = changedParams[key]) === null || _a === void 0 ? void 0 : _a.currentValue) !== null && _b !== void 0 ? _b : changedParams[key];
-                this.updateParameter(key, newValue);
-            }
-            if (changedParams.allowSlideNext) {
-                this.swiperRef.allowSlideNext = this.allowSlideNext;
-            }
-            if (changedParams.allowSlidePrev) {
-                this.swiperRef.allowSlidePrev = this.allowSlidePrev;
-            }
-            if (changedParams.direction) {
-                this.swiperRef.changeDirection(this.direction, false);
-            }
-            if (changedParams.breakpoints) {
-                if (this.loop && !this.loopedSlides) {
-                    this.calcLoopedSlides();
+                if (!(changedParams && _this.swiperRef && !_this.swiperRef.destroyed)) {
+                    return;
                 }
-                this.swiperRef.currentBreakpoint = null;
-                this.swiperRef.setBreakpoint();
-            }
-            this.swiperRef.update();
+                for (var key in changedParams) {
+                    if (ignoreNgOnChanges.indexOf(key) >= 0) {
+                        continue;
+                    }
+                    var newValue = (_b = (_a = changedParams[key]) === null || _a === void 0 ? void 0 : _a.currentValue) !== null && _b !== void 0 ? _b : changedParams[key];
+                    _this.updateParameter(key, newValue);
+                }
+                if (changedParams.allowSlideNext) {
+                    _this.swiperRef.allowSlideNext = _this.allowSlideNext;
+                }
+                if (changedParams.allowSlidePrev) {
+                    _this.swiperRef.allowSlidePrev = _this.allowSlidePrev;
+                }
+                if (changedParams.direction) {
+                    _this.swiperRef.changeDirection(_this.direction, false);
+                }
+                if (changedParams.breakpoints) {
+                    if (_this.loop && !_this.loopedSlides) {
+                        _this.calcLoopedSlides();
+                    }
+                    _this.swiperRef.currentBreakpoint = null;
+                    _this.swiperRef.setBreakpoint();
+                }
+                if (changedParams.thumbs || changedParams.controller) {
+                    _this.updateInitSwiper(changedParams);
+                }
+                _this.swiperRef.update();
+            });
         };
         SwiperComponent.prototype.calcLoopedSlides = function () {
             if (!this.loop) {
@@ -1140,10 +1198,17 @@
                 return;
             }
             var _key = key.replace(/^_/, '');
+            var isCurrentParamObj = isObject(this.swiperRef.params[_key]);
             if (Object.keys(this.swiperRef.modules).indexOf(_key) >= 0) {
-                extend(value, this.swiperRef.modules[_key].params[_key]);
+                var defaultParams = this.swiperRef.modules[_key].params[_key];
+                if (isCurrentParamObj) {
+                    extend(this.swiperRef.params[_key], defaultParams);
+                }
+                else {
+                    this.swiperRef.params[_key] = defaultParams;
+                }
             }
-            if (isObject(this.swiperRef.params[_key]) && isObject(value)) {
+            if (isCurrentParamObj && isObject(value)) {
                 extend(this.swiperRef.params[_key], value);
             }
             else {
@@ -1159,7 +1224,7 @@
             if (index === this.swiperRef.activeIndex) {
                 return;
             }
-            this.zone.runOutsideAngular(function () {
+            this._ngZone.runOutsideAngular(function () {
                 if (_this.loop) {
                     _this.swiperRef.slideToLoop(index, speed, !silent);
                 }
@@ -1169,15 +1234,18 @@
             });
         };
         SwiperComponent.prototype.ngOnDestroy = function () {
-            var _a;
-            (_a = this.swiperRef) === null || _a === void 0 ? void 0 : _a.destroy();
+            var _this = this;
+            this._ngZone.runOutsideAngular(function () {
+                var _a;
+                (_a = _this.swiperRef) === null || _a === void 0 ? void 0 : _a.destroy(true, false);
+            });
         };
         return SwiperComponent;
     }());
     SwiperComponent.decorators = [
         { type: core.Component, args: [{
                     selector: 'swiper, [swiper]',
-                    template: "<ng-content select=\"[slot=container-start]\"></ng-content>\n<ng-container *ngIf=\"navigation && showNavigation\">\n  <div class=\"swiper-button-prev\" #prevElRef></div>\n  <div class=\"swiper-button-next\" #nextElRef></div>\n</ng-container>\n<div *ngIf=\"scrollbar && showScrollbar\" class=\"swiper-scrollbar\" #scrollbarElRef></div>\n<div *ngIf=\"pagination && showPagination\" class=\"swiper-pagination\" #paginationElRef></div>\n<div [ngClass]=\"wrapperClass\">\n  <ng-content select=\"[slot=wrapper-start]\"></ng-content>\n  <ng-template\n    *ngTemplateOutlet=\"\n      slidesTemplate;\n      context: {\n        loopSlides: prependSlides,\n        key: 'prepend'\n      }\n    \"\n  ></ng-template>\n  <ng-template\n    *ngTemplateOutlet=\"\n      slidesTemplate;\n      context: {\n        loopSlides: activeSlides,\n        key: ''\n      }\n    \"\n  ></ng-template>\n  <ng-template\n    *ngTemplateOutlet=\"\n      slidesTemplate;\n      context: {\n        loopSlides: appendSlides,\n        key: 'append'\n      }\n    \"\n  ></ng-template>\n  <ng-content select=\"[slot=wrapper-end]\"></ng-content>\n</div>\n<ng-content select=\"[slot=container-end]\"></ng-content>\n\n<ng-template #slidesTemplate let-loopSlides=\"loopSlides\" let-slideKey=\"key\">\n  <div\n    *ngFor=\"let slide of loopSlides | async\"\n    [ngClass]=\"\n      (slide.class ? slide.class + ' ' : '') +\n      slideClass +\n      (slideKey !== '' ? ' ' + slideDuplicateClass : '')\n    \"\n    [attr.data-swiper-slide-index]=\"slide.virtualIndex ? slide.virtualIndex : slide.slideIndex\"\n    [style]=\"style\"\n    [ngSwitch]=\"slide.zoom\"\n  >\n    <div *ngSwitchCase=\"true\" [ngClass]=\"zoomContainerClass\">\n      <ng-template\n        [ngTemplateOutlet]=\"slide.template\"\n        [ngTemplateOutletContext]=\"{\n          $implicit: slide.slideData\n        }\"\n      ></ng-template>\n    </div>\n    <ng-container *ngSwitchDefault>\n      <ng-template\n        [ngTemplateOutlet]=\"slide.template\"\n        [ngTemplateOutletContext]=\"{\n          $implicit: slide.slideData\n        }\"\n      ></ng-template>\n    </ng-container>\n  </div>\n</ng-template>\n",
+                    template: "<ng-content select=\"[slot=container-start]\"></ng-content>\n<ng-container *ngIf=\"navigation && showNavigation\">\n  <div class=\"swiper-button-prev\" #prevElRef></div>\n  <div class=\"swiper-button-next\" #nextElRef></div>\n</ng-container>\n<div *ngIf=\"scrollbar && showScrollbar\" class=\"swiper-scrollbar\" #scrollbarElRef></div>\n<div *ngIf=\"pagination && showPagination\" class=\"swiper-pagination\" #paginationElRef></div>\n<div [ngClass]=\"wrapperClass\" [attr.id]=\"id\">\n  <ng-content select=\"[slot=wrapper-start]\"></ng-content>\n  <ng-template *ngTemplateOutlet=\"\n      slidesTemplate;\n      context: {\n        loopSlides: prependSlides,\n        key: 'prepend'\n      }\n    \"></ng-template>\n  <ng-template *ngTemplateOutlet=\"\n      slidesTemplate;\n      context: {\n        loopSlides: activeSlides,\n        key: ''\n      }\n    \"></ng-template>\n  <ng-template *ngTemplateOutlet=\"\n      slidesTemplate;\n      context: {\n        loopSlides: appendSlides,\n        key: 'append'\n      }\n    \"></ng-template>\n  <ng-content select=\"[slot=wrapper-end]\"></ng-content>\n</div>\n<ng-content select=\"[slot=container-end]\"></ng-content>\n\n<ng-template #slidesTemplate let-loopSlides=\"loopSlides\" let-slideKey=\"key\">\n  <div *ngFor=\"let slide of loopSlides | async\" [ngClass]=\"\n      (slide.class ? slide.class + ' ' : '') +\n      slideClass +\n      (slideKey !== '' ? ' ' + slideDuplicateClass : '')\n    \" [attr.data-swiper-slide-index]=\"slide.virtualIndex ? slide.virtualIndex : slide.slideIndex\" [style]=\"style\"\n    [ngSwitch]=\"slide.zoom\">\n    <div *ngSwitchCase=\"true\" [ngClass]=\"zoomContainerClass\">\n      <ng-template [ngTemplateOutlet]=\"slide.template\" [ngTemplateOutletContext]=\"{\n          $implicit: slide.slideData\n        }\"></ng-template>\n    </div>\n    <ng-container *ngSwitchDefault>\n      <ng-template [ngTemplateOutlet]=\"slide.template\" [ngTemplateOutletContext]=\"{\n          $implicit: slide.slideData\n        }\"></ng-template>\n    </ng-container>\n  </div>\n</ng-template>\n",
                     changeDetection: core.ChangeDetectionStrategy.OnPush,
                     encapsulation: core.ViewEncapsulation.None,
                     styles: ["\n      swiper {\n        display: block;\n      }\n    "]
@@ -1186,17 +1254,19 @@
     SwiperComponent.ctorParameters = function () { return [
         { type: core.NgZone },
         { type: core.ElementRef },
-        { type: core.ChangeDetectorRef }
+        { type: core.ChangeDetectorRef },
+        { type: undefined, decorators: [{ type: core.Inject, args: [core.PLATFORM_ID,] }] }
     ]; };
     SwiperComponent.propDecorators = {
-        init: [{ type: core.Input }],
         direction: [{ type: core.Input }],
         touchEventsTarget: [{ type: core.Input }],
         initialSlide: [{ type: core.Input }],
         speed: [{ type: core.Input }],
         cssMode: [{ type: core.Input }],
         updateOnWindowResize: [{ type: core.Input }],
+        resizeObserver: [{ type: core.Input }],
         nested: [{ type: core.Input }],
+        focusableElements: [{ type: core.Input }],
         width: [{ type: core.Input }],
         height: [{ type: core.Input }],
         preventInteractionOnTransition: [{ type: core.Input }],
@@ -1281,6 +1351,8 @@
         slideDuplicatePrevClass: [{ type: core.Input }],
         wrapperClass: [{ type: core.Input }],
         runCallbacksOnInit: [{ type: core.Input }],
+        observeParents: [{ type: core.Input }],
+        observeSlideChildren: [{ type: core.Input }],
         a11y: [{ type: core.Input }],
         autoplay: [{ type: core.Input }],
         controller: [{ type: core.Input }],
@@ -1296,6 +1368,8 @@
         parallax: [{ type: core.Input }],
         thumbs: [{ type: core.Input }],
         zoom: [{ type: core.Input }],
+        class: [{ type: core.Input }],
+        id: [{ type: core.Input }],
         navigation: [{ type: core.Input }],
         pagination: [{ type: core.Input }],
         scrollbar: [{ type: core.Input }],
@@ -1383,7 +1457,7 @@
         nextElRef: [{ type: core.ViewChild, args: ['nextElRef', { static: false },] }],
         scrollbarElRef: [{ type: core.ViewChild, args: ['scrollbarElRef', { static: false },] }],
         paginationElRef: [{ type: core.ViewChild, args: ['paginationElRef', { static: false },] }],
-        slidesEl: [{ type: core.ContentChildren, args: [SwiperSlideDirective, { descendants: true, emitDistinctChangesOnly: true },] }],
+        slidesEl: [{ type: core.ContentChildren, args: [SwiperSlideDirective, { descendants: false, emitDistinctChangesOnly: true },] }],
         containerClasses: [{ type: core.HostBinding, args: ['class',] }]
     };
 

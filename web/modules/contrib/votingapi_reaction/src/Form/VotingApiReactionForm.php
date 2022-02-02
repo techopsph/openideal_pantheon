@@ -182,7 +182,7 @@ class VotingApiReactionForm extends ContentEntityForm {
     // If no reaction found, create a new one.
     else {
       $this->entity = Vote::create([
-        'type' => '',
+        'type' => 'vote',
         'entity_id' => $this->entity->getVotedEntityId(),
         'entity_type' => $this->entity->getVotedEntityType(),
         'value_type' => 'option',

@@ -3,12 +3,10 @@
 namespace Drupal\rrssb\Form;
 
 use Drupal\Core\Entity\EntityForm;
-use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Form\FormStateInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Class RRSSBSettingsForm.
+ * RRSSB settings form.
  *
  * @package Drupal\rrssb\Form
  */

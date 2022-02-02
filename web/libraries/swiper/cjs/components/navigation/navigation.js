@@ -12,10 +12,15 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 function _extends() { _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; }; return _extends.apply(this, arguments); }
 
 var Navigation = {
+  toggleEl: function toggleEl($el, disabled) {
+    $el[disabled ? 'addClass' : 'removeClass'](this.params.navigation.disabledClass);
+    if ($el[0] && $el[0].tagName === 'BUTTON') $el[0].disabled = disabled;
+  },
   update: function update() {
     // Update Navigation Buttons
     var swiper = this;
     var params = swiper.params.navigation;
+    var toggleEl = swiper.navigation.toggleEl;
     if (swiper.params.loop) return;
     var _swiper$navigation = swiper.navigation,
         $nextEl = _swiper$navigation.$nextEl,
@@ -23,22 +28,26 @@ var Navigation = {
 
     if ($prevEl && $prevEl.length > 0) {
       if (swiper.isBeginning) {
-        $prevEl.addClass(params.disabledClass);
+        toggleEl($prevEl, true);
       } else {
-        $prevEl.removeClass(params.disabledClass);
+        toggleEl($prevEl, false);
       }
 
-      $prevEl[swiper.params.watchOverflow && swiper.isLocked ? 'addClass' : 'removeClass'](params.lockClass);
+      if (swiper.params.watchOverflow && swiper.enabled) {
+        $prevEl[swiper.isLocked ? 'addClass' : 'removeClass'](params.lockClass);
+      }
     }
 
     if ($nextEl && $nextEl.length > 0) {
       if (swiper.isEnd) {
-        $nextEl.addClass(params.disabledClass);
+        toggleEl($nextEl, true);
       } else {
-        $nextEl.removeClass(params.disabledClass);
+        toggleEl($nextEl, false);
       }
 
-      $nextEl[swiper.params.watchOverflow && swiper.isLocked ? 'addClass' : 'removeClass'](params.lockClass);
+      if (swiper.params.watchOverflow && swiper.enabled) {
+        $nextEl[swiper.isLocked ? 'addClass' : 'removeClass'](params.lockClass);
+      }
     }
   },
   onPrevClick: function onPrevClick(e) {
@@ -56,6 +65,10 @@ var Navigation = {
   init: function init() {
     var swiper = this;
     var params = swiper.params.navigation;
+    swiper.params.navigation = (0, _utils.createElementIfNotDefined)(swiper.$el, swiper.params.navigation, swiper.params.createElements, {
+      nextEl: 'swiper-button-next',
+      prevEl: 'swiper-button-prev'
+    });
     if (!(params.nextEl || params.prevEl)) return;
     var $nextEl;
     var $prevEl;
@@ -90,6 +103,11 @@ var Navigation = {
       $prevEl: $prevEl,
       prevEl: $prevEl && $prevEl[0]
     });
+
+    if (!swiper.enabled) {
+      if ($nextEl) $nextEl.addClass(params.lockClass);
+      if ($prevEl) $prevEl.addClass(params.lockClass);
+    }
   },
   destroy: function destroy() {
     var swiper = this;
@@ -140,12 +158,27 @@ var _default = {
     destroy: function destroy(swiper) {
       swiper.navigation.destroy();
     },
-    click: function click(swiper, e) {
+    'enable disable': function enableDisable(swiper) {
       var _swiper$navigation3 = swiper.navigation,
           $nextEl = _swiper$navigation3.$nextEl,
           $prevEl = _swiper$navigation3.$prevEl;
 
-      if (swiper.params.navigation.hideOnClick && !(0, _dom.default)(e.target).is($prevEl) && !(0, _dom.default)(e.target).is($nextEl)) {
+      if ($nextEl) {
+        $nextEl[swiper.enabled ? 'removeClass' : 'addClass'](swiper.params.navigation.lockClass);
+      }
+
+      if ($prevEl) {
+        $prevEl[swiper.enabled ? 'removeClass' : 'addClass'](swiper.params.navigation.lockClass);
+      }
+    },
+    click: function click(swiper, e) {
+      var _swiper$navigation4 = swiper.navigation,
+          $nextEl = _swiper$navigation4.$nextEl,
+          $prevEl = _swiper$navigation4.$prevEl;
+      var targetEl = e.target;
+
+      if (swiper.params.navigation.hideOnClick && !(0, _dom.default)(targetEl).is($prevEl) && !(0, _dom.default)(targetEl).is($nextEl)) {
+        if (swiper.pagination && swiper.params.pagination && swiper.params.pagination.clickable && (swiper.pagination.el === targetEl || swiper.pagination.el.contains(targetEl))) return;
         var isHidden;
 
         if ($nextEl) {

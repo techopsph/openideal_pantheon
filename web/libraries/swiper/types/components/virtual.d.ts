@@ -1,4 +1,5 @@
 export interface VirtualMethods {
+  enabled?: boolean;
   /**
    * Object with cached slides HTML elements
    */
@@ -44,7 +45,7 @@ export interface VirtualMethods {
   removeAllSlides(): void;
 
   /**
-   * Update virutal slides state
+   * Update virtual slides state
    */
   update(force: boolean): void;
 }

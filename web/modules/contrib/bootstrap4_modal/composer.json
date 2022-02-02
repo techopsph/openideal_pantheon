@@ -1,0 +1,25 @@
+{
+    "name": "drupal/bootstrap4_modal",
+    "description": "Bootstrap 4 Modal",
+    "type": "drupal-module",
+    "homepage": "https://www.drupal.org/project/bootstrap4_modal",
+    "authors": [
+        {
+            "name": "Mark Cristobal (vhin0210)",
+            "homepage": "https://www.drupal.org/u/vhin0210",
+            "role": "Maintainer"
+        }
+    ],
+    "support": {
+        "issues": "https://drupal.org/project/issues/bootstrap4_modal",
+        "source": "http://cgit.drupalcode.org/bootstrap4_modal"
+    },
+    "license": "GPL-2.0-or-later",
+    "minimum-stability": "dev",
+    "repositories": {
+        "drupal": {
+            "type": "composer",
+            "url": "https://packages.drupal.org/8"
+        }
+    }
+}

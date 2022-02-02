@@ -29,9 +29,11 @@ function getParams(obj) {
 
   var allowedParams = _paramsList.paramsList.map(function (key) {
     return key.replace(/_/, '');
-  });
+  }); // Prevent empty Object.keys(obj) array on ios.
 
-  Object.keys(obj).forEach(function (key) {
+
+  var plainObj = Object.assign({}, obj);
+  Object.keys(plainObj).forEach(function (key) {
     if (typeof obj[key] === 'undefined') return;
 
     if (allowedParams.indexOf(key) >= 0) {
@@ -51,7 +53,8 @@ function getParams(obj) {
     }
   });
   ['navigation', 'pagination', 'scrollbar'].forEach(function (key) {
-    if (params[key] === true || params[key] === false) params[key] = {};
+    if (params[key] === true) params[key] = {};
+    if (params[key] === false) delete params[key];
   });
   return {
     params: params,

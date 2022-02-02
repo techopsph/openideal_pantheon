@@ -178,7 +178,7 @@ function votingapi_reaction_entity_delete(EntityInterface $entity) {
 
     // Delete icon along with the vote type.
     $icon = $entity->getThirdPartySetting('votingapi_reaction', 'icon');
-    if ($file = File::load($icon)) {
+    if ($icon && $file = File::load($icon)) {
       $file->delete();
     }
   }

@@ -36,7 +36,7 @@ var A11y = {
     return $el;
   },
   addElRoleDescription: function addElRoleDescription($el, description) {
-    $el.attr('aria-role-description', description);
+    $el.attr('aria-roledescription', description);
     return $el;
   },
   addElControls: function addElControls($el, controls) {
@@ -63,10 +63,10 @@ var A11y = {
     $el.attr('aria-disabled', false);
     return $el;
   },
-  onEnterKey: function onEnterKey(e) {
+  onEnterOrSpaceKey: function onEnterOrSpaceKey(e) {
+    if (e.keyCode !== 13 && e.keyCode !== 32) return;
     var swiper = this;
     var params = swiper.params.a11y;
-    if (e.keyCode !== 13) return;
     var $targetEl = (0, _dom.default)(e.target);
 
     if (swiper.navigation && swiper.navigation.$nextEl && $targetEl.is(swiper.navigation.$nextEl)) {
@@ -93,7 +93,7 @@ var A11y = {
       }
     }
 
-    if (swiper.pagination && $targetEl.is("." + swiper.params.pagination.bulletClass.replace(/ /g, '.'))) {
+    if (swiper.pagination && $targetEl.is((0, _utils.classesToSelector)(swiper.params.pagination.bulletClass))) {
       $targetEl[0].click();
     }
   },
@@ -165,25 +165,23 @@ var A11y = {
 
     var $wrapperEl = swiper.$wrapperEl;
     var wrapperId = $wrapperEl.attr('id') || "swiper-wrapper-" + swiper.a11y.getRandomNumber(16);
-    var live;
+    var live = swiper.params.autoplay && swiper.params.autoplay.enabled ? 'off' : 'polite';
     swiper.a11y.addElId($wrapperEl, wrapperId);
-
-    if (swiper.params.autoplay && swiper.params.autoplay.enabled) {
-      live = 'off';
-    } else {
-      live = 'polite';
-    }
-
     swiper.a11y.addElLive($wrapperEl, live); // Slide
 
     if (params.itemRoleDescriptionMessage) {
       swiper.a11y.addElRoleDescription((0, _dom.default)(swiper.slides), params.itemRoleDescriptionMessage);
     }
 
-    swiper.a11y.addElRole((0, _dom.default)(swiper.slides), 'group');
-    swiper.slides.each(function (slideEl) {
+    swiper.a11y.addElRole((0, _dom.default)(swiper.slides), params.slideRole);
+    var slidesLength = swiper.params.loop ? swiper.slides.filter(function (el) {
+      return !el.classList.contains(swiper.params.slideDuplicateClass);
+    }).length : swiper.slides.length;
+    swiper.slides.each(function (slideEl, index) {
       var $slideEl = (0, _dom.default)(slideEl);
-      swiper.a11y.addElLabel($slideEl, $slideEl.index() + 1 + " / " + swiper.slides.length);
+      var slideIndex = swiper.params.loop ? parseInt($slideEl.attr('data-swiper-slide-index'), 10) : index;
+      var ariaLabelMessage = params.slideLabelMessage.replace(/\{\{index\}\}/, slideIndex + 1).replace(/\{\{slidesLength\}\}/, slidesLength);
+      swiper.a11y.addElLabel($slideEl, ariaLabelMessage);
     }); // Navigation
 
     var $nextEl;
@@ -202,7 +200,7 @@ var A11y = {
 
       if ($nextEl[0].tagName !== 'BUTTON') {
         swiper.a11y.addElRole($nextEl, 'button');
-        $nextEl.on('keydown', swiper.a11y.onEnterKey);
+        $nextEl.on('keydown', swiper.a11y.onEnterOrSpaceKey);
       }
 
       swiper.a11y.addElLabel($nextEl, params.nextSlideMessage);
@@ -214,7 +212,7 @@ var A11y = {
 
       if ($prevEl[0].tagName !== 'BUTTON') {
         swiper.a11y.addElRole($prevEl, 'button');
-        $prevEl.on('keydown', swiper.a11y.onEnterKey);
+        $prevEl.on('keydown', swiper.a11y.onEnterOrSpaceKey);
       }
 
       swiper.a11y.addElLabel($prevEl, params.prevSlideMessage);
@@ -223,7 +221,7 @@ var A11y = {
 
 
     if (swiper.pagination && swiper.params.pagination.clickable && swiper.pagination.bullets && swiper.pagination.bullets.length) {
-      swiper.pagination.$el.on('keydown', "." + swiper.params.pagination.bulletClass.replace(/ /g, '.'), swiper.a11y.onEnterKey);
+      swiper.pagination.$el.on('keydown', (0, _utils.classesToSelector)(swiper.params.pagination.bulletClass), swiper.a11y.onEnterOrSpaceKey);
     }
   },
   destroy: function destroy() {
@@ -241,16 +239,16 @@ var A11y = {
     }
 
     if ($nextEl) {
-      $nextEl.off('keydown', swiper.a11y.onEnterKey);
+      $nextEl.off('keydown', swiper.a11y.onEnterOrSpaceKey);
     }
 
     if ($prevEl) {
-      $prevEl.off('keydown', swiper.a11y.onEnterKey);
+      $prevEl.off('keydown', swiper.a11y.onEnterOrSpaceKey);
     } // Pagination
 
 
     if (swiper.pagination && swiper.params.pagination.clickable && swiper.pagination.bullets && swiper.pagination.bullets.length) {
-      swiper.pagination.$el.off('keydown', "." + swiper.params.pagination.bulletClass.replace(/ /g, '.'), swiper.a11y.onEnterKey);
+      swiper.pagination.$el.off('keydown', (0, _utils.classesToSelector)(swiper.params.pagination.bulletClass), swiper.a11y.onEnterOrSpaceKey);
     }
   }
 };
@@ -265,9 +263,11 @@ var _default = {
       firstSlideMessage: 'This is the first slide',
       lastSlideMessage: 'This is the last slide',
       paginationBulletMessage: 'Go to slide {{index}}',
+      slideLabelMessage: '{{index}} / {{slidesLength}}',
       containerMessage: null,
       containerRoleDescriptionMessage: null,
-      itemRoleDescriptionMessage: null
+      itemRoleDescriptionMessage: null,
+      slideRole: 'group'
     }
   },
   create: function create() {

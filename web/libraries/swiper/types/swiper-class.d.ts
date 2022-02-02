@@ -63,9 +63,19 @@ interface Swiper extends SwiperClass<SwiperEvents> {
   wrapperEl: HTMLElement;
 
   /**
+   * Object with original initialization parameters
+   */
+  originalParams: SwiperOptions;
+
+  /**
    * Dom7 array-like collection of slides HTML elements. To get specific slide HTMLElement use `swiper.slides[1]`
    */
   slides: Dom7Array;
+
+  /**
+   * !INTERNAL
+   */
+  loopedSlides: number | null;
 
   /**
    * Width of container
@@ -161,7 +171,30 @@ interface Swiper extends SwiperClass<SwiperEvents> {
    */
   allowTouchMove: boolean;
 
+  /**
+   * !INTERNAL
+   */
   rtlTranslate: boolean;
+
+  /**
+   * Disable Swiper (if it was enabled). When Swiper is disabled, it will hide all navigation elements and won't respond to any events and interactions
+   *
+   */
+  disable(): void;
+
+  /**
+   * Enable Swiper (if it was disabled)
+   *
+   */
+  enable(): void;
+
+  /**
+   * Set Swiper translate progress (from 0 to 1). Where 0 - its initial position (offset) on first slide, and 1 - its maximum position (offset) on last slide
+   *
+   * @param progress Swiper translate progress (from 0 to 1).
+   * @param speed Transition duration (in ms).
+   */
+  setProgress(progress: number, speed?: number): void;
 
   /**
    * Run transition to next slide.
@@ -278,9 +311,18 @@ interface Swiper extends SwiperClass<SwiperEvents> {
   attachEvents(): void;
 
   /**
+   * !INTERNAL
+   */
+  loopDestroy(): void;
+  /**
+   * !INTERNAL
+   */
+  loopCreate(): void;
+
+  /**
    * Initialize slider
    */
-  init(): void;
+  init(el?: HTMLElement): Swiper;
 
   /**
    * Destroy slider instance and detach all events listeners
@@ -402,16 +444,36 @@ interface Swiper extends SwiperClass<SwiperEvents> {
    */
   offAny(handler: (eventName: string, ...args: any[]) => void): void;
 
+  /**
+   * !INTERNAL
+   */
   isHorizontal(): boolean;
 
+  /**
+   * !INTERNAL
+   */
   getBreakpoint(breakpoints: SwiperOptions['breakpoints']): string;
 
+  /**
+   * !INTERNAL
+   */
   setBreakpoint(): void;
 
+  /**
+   * !INTERNAL
+   */
   currentBreakpoint: any;
 
+  /**
+   * !INTERNAL
+   */
   destroyed: boolean;
+
+  /**
+   * !INTERNAL
+   */
   modules: Array<any>; //TODO: add typing
+
   a11y: A11yMethods;
   autoplay: AutoplayMethods;
   controller: ControllerMethods;
@@ -457,7 +519,7 @@ declare class Swiper implements Swiper {
   static extendDefaults(options: SwiperOptions): void;
 
   /**
-   * Object with global Swiper exntended options
+   * Object with global Swiper extended options
    */
   static extendedDefaults: SwiperOptions;
 }

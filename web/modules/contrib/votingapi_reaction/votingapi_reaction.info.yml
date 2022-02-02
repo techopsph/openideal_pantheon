@@ -9,7 +9,7 @@ dependencies:
   - votingapi:votingapi
   - drupal:field
 
-# Information added by Drupal.org packaging script on 2020-06-22
-version: '8.x-1.1'
+# Information added by Drupal.org packaging script on 2022-01-31
+version: '8.x-1.2'
 project: 'votingapi_reaction'
-datestamp: 1592841301
+datestamp: 1643651856

@@ -8,6 +8,9 @@ exports.getTranslate = getTranslate;
 exports.isObject = isObject;
 exports.extend = extend;
 exports.bindModuleMethods = bindModuleMethods;
+exports.getComputedStyle = getComputedStyle;
+exports.classesToSelector = classesToSelector;
+exports.createElementIfNotDefined = createElementIfNotDefined;
 
 var _ssrWindow = require("ssr-window");
 
@@ -38,6 +41,25 @@ function now() {
   return Date.now();
 }
 
+function getComputedStyle(el) {
+  var window = (0, _ssrWindow.getWindow)();
+  var style;
+
+  if (window.getComputedStyle) {
+    style = window.getComputedStyle(el, null);
+  }
+
+  if (!style && el.currentStyle) {
+    style = el.currentStyle;
+  }
+
+  if (!style) {
+    style = el.style;
+  }
+
+  return style;
+}
+
 function getTranslate(el, axis) {
   if (axis === void 0) {
     axis = 'x';
@@ -47,7 +69,7 @@ function getTranslate(el, axis) {
   var matrix;
   var curTransform;
   var transformMatrix;
-  var curStyle = window.getComputedStyle(el, null);
+  var curStyle = getComputedStyle(el, null);
 
   if (window.WebKitCSSMatrix) {
     curTransform = curStyle.transform || curStyle.webkitTransform;
@@ -84,17 +106,29 @@ function getTranslate(el, axis) {
 }
 
 function isObject(o) {
-  return typeof o === 'object' && o !== null && o.constructor && o.constructor === Object;
+  return typeof o === 'object' && o !== null && o.constructor && Object.prototype.toString.call(o).slice(8, -1) === 'Object';
+}
+
+function isNode(node) {
+  // eslint-disable-next-line
+  if (typeof window !== 'undefined' && typeof window.HTMLElement !== 'undefined') {
+    return node instanceof HTMLElement;
+  }
+
+  return node && (node.nodeType === 1 || node.nodeType === 11);
 }
 
 function extend() {
   var to = Object(arguments.length <= 0 ? undefined : arguments[0]);
+  var noExtend = ['__proto__', 'constructor', 'prototype'];
 
   for (var i = 1; i < arguments.length; i += 1) {
     var nextSource = i < 0 || arguments.length <= i ? undefined : arguments[i];
 
-    if (nextSource !== undefined && nextSource !== null) {
-      var keysArray = Object.keys(Object(nextSource));
+    if (nextSource !== undefined && nextSource !== null && !isNode(nextSource)) {
+      var keysArray = Object.keys(Object(nextSource)).filter(function (key) {
+        return noExtend.indexOf(key) < 0;
+      });
 
       for (var nextIndex = 0, len = keysArray.length; nextIndex < len; nextIndex += 1) {
         var nextKey = keysArray[nextIndex];
@@ -102,10 +136,19 @@ function extend() {
 
         if (desc !== undefined && desc.enumerable) {
           if (isObject(to[nextKey]) && isObject(nextSource[nextKey])) {
-            extend(to[nextKey], nextSource[nextKey]);
+            if (nextSource[nextKey].__swiper__) {
+              to[nextKey] = nextSource[nextKey];
+            } else {
+              extend(to[nextKey], nextSource[nextKey]);
+            }
           } else if (!isObject(to[nextKey]) && isObject(nextSource[nextKey])) {
             to[nextKey] = {};
-            extend(to[nextKey], nextSource[nextKey]);
+
+            if (nextSource[nextKey].__swiper__) {
+              to[nextKey] = nextSource[nextKey];
+            } else {
+              extend(to[nextKey], nextSource[nextKey]);
+            }
           } else {
             to[nextKey] = nextSource[nextKey];
           }
@@ -129,4 +172,30 @@ function bindModuleMethods(instance, obj) {
 
     instance[key] = obj[key];
   });
+}
+
+function classesToSelector(classes) {
+  if (classes === void 0) {
+    classes = '';
+  }
+
+  return "." + classes.trim().replace(/([\.:!\/])/g, '\\$1') // eslint-disable-line
+  .replace(/ /g, '.');
+}
+
+function createElementIfNotDefined($container, params, createElements, checkProps) {
+  var document = (0, _ssrWindow.getDocument)();
+
+  if (createElements) {
+    Object.keys(checkProps).forEach(function (key) {
+      if (!params[key] && params.auto === true) {
+        var element = document.createElement('div');
+        element.className = checkProps[key];
+        $container.append(element);
+        params[key] = element;
+      }
+    });
+  }
+
+  return params;
 }

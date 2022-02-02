@@ -1,0 +1,16 @@
+{
+  "name": "drupal/domain_registration",
+  "type": "drupal-module",
+  "description": "Module Allows or restricts registration on your site based on the persons email address domain.",
+  "keywords": ["Drupal", "domain_registration"],
+  "license": "GPL-2.0+",
+  "homepage": "http://drupal.org/project/domain_registration",
+  "minimum-stability": "dev",
+  "support": {
+    "issues": "http://drupal.org/project/issues/domain_registration",
+    "source": "http://cgit.drupalcode.org/domain_registration"
+  },
+  "require": {
+    "drupal/core": "^8 || ^9"
+  }
+}

@@ -88,8 +88,8 @@ class VotingApiCommands extends DrushCommands {
       ]);
     }
 
+    $manager = \Drupal::service('plugin.manager.votingapi.resultfunction');
     foreach ($votes as $vote) {
-      $manager = Drupal::service('plugin.manager.votingapi.resultfunction');
       $manager->recalculateResults($vote['entity_type'], $vote['entity_id'], $vote_type);
     }
 

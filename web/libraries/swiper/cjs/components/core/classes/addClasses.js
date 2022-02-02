@@ -3,6 +3,22 @@
 exports.__esModule = true;
 exports.default = addClasses;
 
+function prepareClasses(entries, prefix) {
+  var resultClasses = [];
+  entries.forEach(function (item) {
+    if (typeof item === 'object') {
+      Object.keys(item).forEach(function (classNames) {
+        if (item[classNames]) {
+          resultClasses.push(prefix + classNames);
+        }
+      });
+    } else if (typeof item === 'string') {
+      resultClasses.push(prefix + item);
+    }
+  });
+  return resultClasses;
+}
+
 function addClasses() {
   var swiper = this;
   var classNames = swiper.classNames,
@@ -10,50 +26,28 @@ function addClasses() {
       rtl = swiper.rtl,
       $el = swiper.$el,
       device = swiper.device,
-      support = swiper.support;
-  var suffixes = [];
-  suffixes.push('initialized');
-  suffixes.push(params.direction);
+      support = swiper.support; // prettier-ignore
 
-  if (support.pointerEvents && !support.touch) {
-    suffixes.push('pointer-events');
-  }
-
-  if (params.freeMode) {
-    suffixes.push('free-mode');
-  }
-
-  if (params.autoHeight) {
-    suffixes.push('autoheight');
-  }
-
-  if (rtl) {
-    suffixes.push('rtl');
-  }
-
-  if (params.slidesPerColumn > 1) {
-    suffixes.push('multirow');
-
-    if (params.slidesPerColumnFill === 'column') {
-      suffixes.push('multirow-column');
-    }
-  }
-
-  if (device.android) {
-    suffixes.push('android');
-  }
-
-  if (device.ios) {
-    suffixes.push('ios');
-  }
-
-  if (params.cssMode) {
-    suffixes.push('css-mode');
-  }
-
-  suffixes.forEach(function (suffix) {
-    classNames.push(params.containerModifierClass + suffix);
-  });
-  $el.addClass(classNames.join(' '));
+  var suffixes = prepareClasses(['initialized', params.direction, {
+    'pointer-events': support.pointerEvents && !support.touch
+  }, {
+    'free-mode': params.freeMode
+  }, {
+    'autoheight': params.autoHeight
+  }, {
+    'rtl': rtl
+  }, {
+    'multirow': params.slidesPerColumn > 1
+  }, {
+    'multirow-column': params.slidesPerColumn > 1 && params.slidesPerColumnFill === 'column'
+  }, {
+    'android': device.android
+  }, {
+    'ios': device.ios
+  }, {
+    'css-mode': params.cssMode
+  }], params.containerModifierClass);
+  classNames.push.apply(classNames, suffixes);
+  $el.addClass([].concat(classNames).join(' '));
   swiper.emitContainerClasses();
 }

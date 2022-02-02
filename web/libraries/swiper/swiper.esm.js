@@ -1,5 +1,5 @@
 /**
- * Swiper 6.4.10
+ * Swiper 6.8.4
  * Most modern mobile touch slider and framework with hardware accelerated transitions
  * https://swiperjs.com
  *
@@ -7,10 +7,9 @@
  *
  * Released under the MIT License
  *
- * Released on: January 29, 2021
+ * Released on: August 23, 2021
  */
 
-import Swiper from './esm/components/core/core-class';
 export { default as Swiper, default } from './esm/components/core/core-class';
 export { default as Virtual } from './esm/components/virtual/virtual';
 export { default as Keyboard } from './esm/components/keyboard/keyboard';
@@ -31,7 +30,3 @@ export { default as EffectCube } from './esm/components/effect-cube/effect-cube'
 export { default as EffectFlip } from './esm/components/effect-flip/effect-flip';
 export { default as EffectCoverflow } from './esm/components/effect-coverflow/effect-coverflow';
 export { default as Thumbs } from './esm/components/thumbs/thumbs';
-
-// Swiper Class
-var components = [];
-Swiper.use(components);

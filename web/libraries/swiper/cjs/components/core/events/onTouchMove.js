@@ -17,7 +17,9 @@ function onTouchMove(event) {
   var data = swiper.touchEventsData;
   var params = swiper.params,
       touches = swiper.touches,
-      rtl = swiper.rtlTranslate;
+      rtl = swiper.rtlTranslate,
+      enabled = swiper.enabled;
+  if (!enabled) return;
   var e = event;
   if (e.originalEvent) e = e.originalEvent;
 
@@ -71,7 +73,7 @@ function onTouchMove(event) {
   }
 
   if (data.isTouchEvent && document.activeElement) {
-    if (e.target === document.activeElement && (0, _dom.default)(e.target).is(data.formElements)) {
+    if (e.target === document.activeElement && (0, _dom.default)(e.target).is(data.focusableElements)) {
       data.isMoved = true;
       swiper.allowClick = false;
       return;
@@ -186,6 +188,10 @@ function onTouchMove(event) {
   }
 
   if (!swiper.allowSlidePrev && swiper.swipeDirection === 'prev' && data.currentTranslate > data.startTranslate) {
+    data.currentTranslate = data.startTranslate;
+  }
+
+  if (!swiper.allowSlidePrev && !swiper.allowSlideNext) {
     data.currentTranslate = data.startTranslate;
   } // Threshold
 

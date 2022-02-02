@@ -6,6 +6,7 @@
  */
 
 use Drupal\user\Entity\User;
+use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Implements hook_install().
@@ -26,7 +27,7 @@ function idea_install() {
 
   // Force set the administerusersbyrole configuration in fact
   // the module change it during installation of profile.
-  // @Todo: Further investigation.
+  // @todo Further investigation.
   \Drupal::configFactory()->getEditable('administerusersbyrole.settings')->set('roles', ['manager' => 'safe'])->save();
 
   // To avoid issues with importing of configurations set system.site
@@ -36,4 +37,48 @@ function idea_install() {
     ->set('slogan', 'Ideas, challenges, news')
     ->set('page', ['front' => '/home'])
     ->save();
+
+  drupal_register_shutdown_function('_idea_rebuild_cache');
+}
+
+/**
+ * Force rebuild all Drupal's caches.
+ *
+ * Rules require clearing the cache to rebuild the container and register
+ * new rules events. Clearing cache in hook_install() didn't help, that's
+ * why it was moved to shutdown function.
+ */
+function _idea_rebuild_cache() {
+  $loader = require DRUPAL_ROOT . '/autoload.php';
+  include_once DRUPAL_ROOT . '/core/includes/utility.inc';
+
+  $request = Request::createFromGlobals();
+
+  // Clear user cache for all major platforms.
+  $user_caches = [
+    'apcu_clear_cache',
+    'wincache_ucache_clear',
+    'xcache_clear_cache',
+  ];
+  array_map('call_user_func', array_filter($user_caches, 'is_callable'));
+
+  drupal_rebuild($loader, $request);
+}
+
+/**
+ * Configuration update.
+ */
+function idea_update_8001() {
+  if (!\Drupal::moduleHandler()->moduleExists('update_helper')) {
+    \Drupal::service('module_installer')->install(['update_helper']);
+  }
+
+  /** @var \Drupal\update_helper\Updater $updateHelper */
+  $updateHelper = \Drupal::service('update_helper.updater');
+
+  // Execute configuration update definitions with logging of success.
+  $updateHelper->executeUpdate('idea', 'idea_update_8001');
+
+  // Output logged messages to related channel of update execution.
+  return $updateHelper->logger()->output();
 }

@@ -157,7 +157,7 @@ class VotingApiReactionFormatter extends FormatterBase implements ContainerFacto
     ];
 
     $entity = Vote::create([
-      'type' => '',
+      'type' => 'vote',
       'entity_id' => $items->getEntity()->id(),
       'entity_type' => $items->getEntity()->getEntityTypeId(),
       'value_type' => 'option',

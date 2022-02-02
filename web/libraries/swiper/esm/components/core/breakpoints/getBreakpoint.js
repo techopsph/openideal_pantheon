@@ -1,13 +1,17 @@
 import { getWindow } from 'ssr-window';
-export default function getBreakpoints(breakpoints) {
-  var window = getWindow(); // Get breakpoint for window width
+export default function getBreakpoint(breakpoints, base, containerEl) {
+  if (base === void 0) {
+    base = 'window';
+  }
 
-  if (!breakpoints) return undefined;
+  if (!breakpoints || base === 'container' && !containerEl) return undefined;
   var breakpoint = false;
+  var window = getWindow();
+  var currentHeight = base === 'window' ? window.innerHeight : containerEl.clientHeight;
   var points = Object.keys(breakpoints).map(function (point) {
     if (typeof point === 'string' && point.indexOf('@') === 0) {
       var minRatio = parseFloat(point.substr(1));
-      var value = window.innerHeight * minRatio;
+      var value = currentHeight * minRatio;
       return {
         value: value,
         point: point
@@ -28,7 +32,11 @@ export default function getBreakpoints(breakpoints) {
         point = _points$i.point,
         value = _points$i.value;
 
-    if (value <= window.innerWidth) {
+    if (base === 'window') {
+      if (window.matchMedia("(min-width: " + value + "px)").matches) {
+        breakpoint = point;
+      }
+    } else if (value <= containerEl.clientWidth) {
       breakpoint = point;
     }
   }

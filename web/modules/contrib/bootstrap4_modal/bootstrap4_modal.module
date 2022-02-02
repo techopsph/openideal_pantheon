@@ -1,0 +1,113 @@
+<?php
+
+/**
+ * @file
+ * Contains bootstrap4_modal.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Component\Utility\Html;
+
+/**
+ * Implements hook_help().
+ */
+function bootstrap4_modal_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    case 'help.page.bootstrap4_modal':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Bootstrap 4 Modal provides bootstrap 4 modal to be loaded like the core ajax dialog') . '</p>';
+      $output .= '<h3>' . t('Uses') . '</h3>';
+      $output .= '<dl>';
+      $output .= '<dt>' . t('Loading ajax pages to a dialog') . '</dt>';
+      $output .= '<dd>' . t('This module, and the core ajax dialog provides a dialog using Bootstrap 4 modal. It is recommended to use this theme if you are using a Bootstrap 4 based theme.') . '</dd>';
+      $output .= '<dt>' . t('Sample usage') . '</dt>';
+      $output .= '<dd><code>' . Html::escape('<a href="[some-links]" class="use-ajax" data-dialog-type="bootstrap4_modal" data-dialog-options="{&quot;dialogClasses&quot;:&quot;modal-dialog-centered&quot;,&quot;dialogShowHeader&quot;:false}">Open in Bootstrap 4 Modal</a>') . '</code></dd>';
+      $output .= '</dl>';
+      return $output;
+  }
+}
+
+/**
+ * Implements hook_theme().
+ *
+ * Overrides the core html theme to use a custom template for iframes.
+ */
+function bootstrap4_modal_theme() {
+  return [
+    'html__entity_browser__bootstrap4_iframe' => [
+      'template' => 'html--entity-browser--bootstrap4-modal--iframe',
+      'render element' => 'html',
+      'preprocess functions' => ['template_preprocess_html'],
+    ],
+    'html__entity_browser__bootstrap4_modal' => [
+      'template' => 'html--entity-browser--bootstrap4-modal--iframe',
+      'render element' => 'html',
+      'preprocess functions' => ['template_preprocess_html'],
+    ],
+    'page__entity_browser__bootstrap4_iframe' => [
+      'template' => 'page--entity-browser--bootstrap4-modal--iframe',
+      'render element' => 'html',
+      'preprocess functions' => ['template_preprocess_page'],
+    ],
+    'page__entity_browser__bootstrap4_modal' => [
+      'template' => 'page--entity-browser--bootstrap4-modal--iframe',
+      'render element' => 'html',
+      'preprocess functions' => ['template_preprocess_page'],
+    ],
+  ];
+}
+
+/**
+ * Implements hook_preprocess_page__entity_browser__bootstrap4_iframe().
+ *
+ * Tries to figure out where messages block lives and display it separately.
+ */
+function bootstrap4_modal_preprocess_page__entity_browser__bootstrap4_iframe(&$variables) {
+  if (!\Drupal::moduleHandler()->moduleExists('block')) {
+    return;
+  }
+  $variables['messages'] = '';
+  $blocks = \Drupal::entityTypeManager()->getStorage('block')->loadByProperties([
+    'theme' => \Drupal::theme()->getActiveTheme()->getName(),
+    'plugin' => 'system_messages_block',
+  ]);
+
+  if (($messages = current($blocks)) && !empty($variables['page'][$messages->getRegion()][$messages->id()])) {
+    $variables['messages'] = $variables['page'][$messages->getRegion()][$messages->id()];
+  }
+}
+
+/**
+ * Implements hook_preprocess_page__entity_browser__bootstrap4_modal().
+ *
+ * Tries to figure out where messages block lives and display it separately.
+ */
+function bootstrap4_modal_preprocess_page__entity_browser__bootstrap4_modal(&$variables) {
+  bootstrap4_modal_preprocess_page__entity_browser__bootstrap4_iframe($variables);
+}
+
+/**
+ * Implements hook_library_info_alter().
+ */
+function bootstrap4_modal_library_info_alter(&$libraries, $extension) {
+  if ($extension == 'entity_browser') {
+    $libraries['bootstrap4_modal_selection'] = [
+      'version' => 'VERSION',
+      'js' => [
+        '/' . drupal_get_path('module', 'bootstrap4_modal') . '/js/entity_browser.bootstrap4_modal_selection.js' => [],
+      ],
+      'dependencies' => [
+        'core/drupalSettings',
+      ],
+    ];
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK().
+ */
+function bootstrap4_modal_preprocess_page(&$variables) {
+  $variables['#attached']['library'][] = 'bootstrap4_modal/bs4_modal.dialog';
+  $variables['#attached']['library'][] = 'bootstrap4_modal/bs4_modal.dialog.ajax';
+}

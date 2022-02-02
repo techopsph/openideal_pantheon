@@ -1,0 +1,4 @@
+administer domain registration:
+  title: 'Administer domain registration'
+  description: 'Allows a user to administer the domain registration settings.'
+  restrict access: TRUE

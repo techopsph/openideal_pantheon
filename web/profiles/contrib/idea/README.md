@@ -21,15 +21,25 @@ OpenideaL includes tools for the website managers which allow them to identify *
 
 OI is based on Drupal, and therefore it is modular, and allows growth and adaptation to the organization’s specific needs. These adaptations may include a unique design, polls and surveys, interfacing with external applications or adapting the interface to a range of devices ans apis.
 
+## Prerequisites:
+Since OpenideaL relies on [Drupal](https://www.drupal.org/) and is subject to its system requirements, it is recommended ensuring that you have satisfied the [Drupal System Requirements](https://www.drupal.org/docs/system-requirements) before moving forward.
+
 ## Build
 
 OpenideaL is super easy to install. The following composer command will install the full codebase, together with all the required dependencies and libraries:
 
 ```
-composer create-project linnovate/openideal-composer
+composer create-project linnovate/openideal-composer openideal
 ```
 
 Once the command has finishd executing, the `web` directory will hold all the necessary files to run OpenideaL. Proceed to installation of the site(s).
+
+If you run into a `Fatal error: Allowed memory size of xxxxxxxx bytes exhausted`, try running the above command like this:
+
+```
+COMPOSER_MEMORY_LIMIT=-1 composer create-project linnovate/openideal-composer openideal
+```
+
 
 ## Installation
 
@@ -44,6 +54,20 @@ When at the `web` directory, run the following:
 - Change `my_mail@example.com` with your email address
 - Change `dbuser@127.0.0.1/db_name` with your DB settings
 - The last bit - `idea` is the name of the profile
+
+## Update
+
+At any point you can run
+
+`composer require linnovate/openideal:[version-number]` where `[version number]` is the desired tag.
+`composer update`
+`drush updb`
+`drush cr`
+`drush cim`
+
+To upgrade Drupal core version run 
+
+`composer update drupal/core 'drupal/core-*' --with-dependencies` , then run `drush updb`. 
 
 ## License
 

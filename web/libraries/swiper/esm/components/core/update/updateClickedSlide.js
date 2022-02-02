@@ -4,10 +4,15 @@ export default function updateClickedSlide(e) {
   var params = swiper.params;
   var slide = $(e.target).closest("." + params.slideClass)[0];
   var slideFound = false;
+  var slideIndex;
 
   if (slide) {
     for (var i = 0; i < swiper.slides.length; i += 1) {
-      if (swiper.slides[i] === slide) slideFound = true;
+      if (swiper.slides[i] === slide) {
+        slideFound = true;
+        slideIndex = i;
+        break;
+      }
     }
   }
 
@@ -17,7 +22,7 @@ export default function updateClickedSlide(e) {
     if (swiper.virtual && swiper.params.virtual.enabled) {
       swiper.clickedIndex = parseInt($(slide).attr('data-swiper-slide-index'), 10);
     } else {
-      swiper.clickedIndex = $(slide).index();
+      swiper.clickedIndex = slideIndex;
     }
   } else {
     swiper.clickedSlide = undefined;

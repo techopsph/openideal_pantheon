@@ -182,12 +182,17 @@ var Lazy = {
       }
     }
 
+    var passiveListener = swiper.touchEvents.start === 'touchstart' && swiper.support.passiveListener && swiper.params.passiveListeners ? {
+      passive: true,
+      capture: false
+    } : false;
+
     if (inView) {
       swiper.lazy.load();
-      $scrollElement.off('scroll', swiper.lazy.checkInViewOnLoad);
+      $scrollElement.off('scroll', swiper.lazy.checkInViewOnLoad, passiveListener);
     } else if (!swiper.lazy.scrollHandlerAttached) {
       swiper.lazy.scrollHandlerAttached = true;
-      $scrollElement.on('scroll', swiper.lazy.checkInViewOnLoad);
+      $scrollElement.on('scroll', swiper.lazy.checkInViewOnLoad, passiveListener);
     }
   }
 };
@@ -235,12 +240,7 @@ export default {
         swiper.lazy.load();
       }
     },
-    resize: function resize(swiper) {
-      if (swiper.params.lazy.enabled) {
-        swiper.lazy.load();
-      }
-    },
-    scrollbarDragMove: function scrollbarDragMove(swiper) {
+    'scrollbarDragMove resize _freeModeNoMomentumRelease': function lazyLoad(swiper) {
       if (swiper.params.lazy.enabled) {
         swiper.lazy.load();
       }
@@ -258,7 +258,15 @@ export default {
       }
     },
     slideChange: function slideChange(swiper) {
-      if (swiper.params.lazy.enabled && swiper.params.cssMode) {
+      var _swiper$params = swiper.params,
+          lazy = _swiper$params.lazy,
+          cssMode = _swiper$params.cssMode,
+          watchSlidesVisibility = _swiper$params.watchSlidesVisibility,
+          watchSlidesProgress = _swiper$params.watchSlidesProgress,
+          touchReleaseOnEdges = _swiper$params.touchReleaseOnEdges,
+          resistanceRatio = _swiper$params.resistanceRatio;
+
+      if (lazy.enabled && (cssMode || (watchSlidesVisibility || watchSlidesProgress) && (touchReleaseOnEdges || resistanceRatio === 0))) {
         swiper.lazy.load();
       }
     }

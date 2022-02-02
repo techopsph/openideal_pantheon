@@ -3,6 +3,7 @@
 namespace Drupal\moderation_state_buttons_widget\Form;
 
 use Drupal\Core\Entity\EntityStorageException;
+use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
@@ -22,14 +23,22 @@ class ModerationStateSelectionForm extends FormBase {
   protected $moderationStateButtonsWidgetInfo;
 
   /**
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
+
+  /**
    * Constructs a new ModerationStateSelectionForm object.
    *
    * @param \Drupal\moderation_state_buttons_widget\ModerationStateButtonsWidgetInfoInterface $moderation_state_buttons_widget_info
+   * @param \Drupal\Core\Entity\EntityTypeManager $entity_type_manager
    */
   public function __construct(
-    ModerationStateButtonsWidgetInfoInterface $moderation_state_buttons_widget_info
+    ModerationStateButtonsWidgetInfoInterface $moderation_state_buttons_widget_info,
+    EntityTypeManager $entity_type_manager
   ) {
     $this->moderationStateButtonsWidgetInfo = $moderation_state_buttons_widget_info;
+    $this->entityTypeManager = $entity_type_manager;
   }
 
   /**
@@ -37,7 +46,8 @@ class ModerationStateSelectionForm extends FormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('moderation_state_buttons_widget.info')
+      $container->get('moderation_state_buttons_widget.info'),
+      $container->get('entity_type.manager')
     );
   }
 
@@ -108,7 +118,7 @@ class ModerationStateSelectionForm extends FormBase {
    *   The rendered form. This function may also perform a redirect and hence
    *   may not return at all depending upon the $form_state flags that were set.
    */
-  public static function afterBuild(array $form,FormStateInterface $form_state) {
+  public static function afterBuild(array $form, FormStateInterface $form_state) {
     $buildInfo = $form_state->getBuildInfo();
     foreach ($buildInfo['states'] as $stateId => $stateInfo) {
       if (!$stateInfo['transition_possible']) {
@@ -148,15 +158,20 @@ class ModerationStateSelectionForm extends FormBase {
     $buildInfo = $form_state->getBuildInfo();
     /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
     $entity = $buildInfo['args'][0];
+    /** @var \Drupal\Core\Entity\ContentEntityStorageInterface $storage */
+    $storage = $this->entityTypeManager->getStorage($entity->getEntityTypeId());
+
+    $newRevision = $storage->createRevision($entity);
     $newState = $form_state->getValue('new_state');
 
-    $entity->moderation_state = $newState;
+    $newRevision->moderation_state = $newState;
     try {
-      $entity->save();
+      $newRevision->save();
       $this->messenger()->addStatus(
         new TranslatableMarkup('Save successful.')
       );
-    } catch (EntityStorageException $e) {
+    }
+    catch (EntityStorageException $e) {
       $this->messenger()->addError(new TranslatableMarkup(
         'Save failed with message: %message',
         ['%message' => $e->getMessage()]

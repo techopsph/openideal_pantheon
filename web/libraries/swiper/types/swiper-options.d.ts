@@ -12,6 +12,7 @@ import { LazyOptions } from './components/lazy';
 import { MousewheelOptions } from './components/mousewheel';
 import { NavigationOptions } from './components/navigation';
 import { PaginationOptions } from './components/pagination';
+import { ParallaxOptions } from './components/parallax';
 import { ScrollbarOptions } from './components/scrollbar';
 import { ThumbsOptions } from './components/thumbs';
 import { VirtualOptions } from './components/virtual';
@@ -30,11 +31,25 @@ export interface SwiperOptions {
   init?: boolean;
 
   /**
+   * Whether Swiper initially enabled. When Swiper is disabled, it will hide all navigation elements and won't respond to any events and interactions
+   *
+   * @default true
+   */
+  enabled?: boolean;
+
+  /**
    * Swiper will recalculate slides position on window resize (orientationchange)
    *
    * @default true
    */
   updateOnWindowResize?: boolean;
+
+  /**
+   * When enabled it will use ResizeObserver (if supported by browser) on swiper container to detect container resize (instead of watching for window resize)
+   *
+   * @default false
+   */
+  resizeObserver?: boolean;
 
   /**
    * Index number of initial slide.
@@ -117,6 +132,22 @@ export interface SwiperOptions {
   nested?: boolean;
 
   /**
+   * When enabled Swiper will automatically wrap slides with swiper-wrapper element,
+   * and will create required elements for navigation, pagination and scrollbar
+   * they are enabled (with their respective params object or with boolean `true`))
+   *
+   * @default false
+   */
+  createElements?: boolean;
+
+  /**
+   * CSS selector for focusable elements. Swiping will be disabled on such elements if they are "focused"
+   *
+   * @default 'input, select, option, textarea, button, video, label'
+   */
+  focusableElements?: string;
+
+  /**
    * If enabled (by default) and navigation elements' parameters passed as a string (like `".pagination"`)
    * then Swiper will look for such elements through child elements first.
    * Applies for pagination, prev/next buttons and scrollbar elements
@@ -126,7 +157,7 @@ export interface SwiperOptions {
   uniqueNavElements?: boolean;
 
   /**
-   * Transition effect. Can be "slide", "fade", "cube", "coverflow" or "flip"
+   * Transition effect. Can be `'slide'`, `'fade'`, `'cube'`, `'coverflow'` or `'flip'`
    *
    * @default 'slide'
    */
@@ -238,7 +269,7 @@ export interface SwiperOptions {
   slidesPerColumn?: number;
 
   /**
-   * Can be 'column' or 'row'. Defines how slides should fill rows, by column or by row
+   * Can be `'column'` or `'row'`. Defines how slides should fill rows, by column or by row
    *
    * @default 'column'
    */
@@ -314,7 +345,7 @@ export interface SwiperOptions {
    * Target element to listen touch events on. Can be `'container'` (to listen for touch events on swiper-container) or `'wrapper'`
    * (to listen for touch events on swiper-wrapper)
    *
-   * @default 'wrapper'
+   * @default 'container'
    */
   touchEventsTarget?: 'container' | 'wrapper';
 
@@ -715,6 +746,15 @@ export interface SwiperOptions {
     [ratio: string]: SwiperOptions;
   };
 
+  /**
+   * Base for breakpoints (beta). Can be `window` or `container`. If set to `window` (by default) then breakpoint keys mean window width. If set to `container` then breakpoint keys treated as swiper container width
+   *
+   * @default 'window'
+   *
+   * @note Currently in beta and not supported by Swiper Angular, React, Svelte and Vue components
+   */
+  breakpointsBase?: string;
+
   // Observer
   /**
    * Set to `true` to enable Mutation Observer on Swiper and its elements. In this case Swiper will be updated (reinitialized) each time if you change its style (like hide/show) or modify its child elements (like adding/removing slides)
@@ -914,6 +954,7 @@ export interface SwiperOptions {
    * @example
    * ```js
    * const swiper = new Swiper('.swiper-container', {
+   *   effect: 'coverflow',
    *   coverflowEffect: {
    *     rotate: 30,
    *     slideShadows: false,
@@ -929,6 +970,7 @@ export interface SwiperOptions {
    * @example
    * ```js
    * const swiper = new Swiper('.swiper-container', {
+   *   effect: 'cube',
    *   cubeEffect: {
    *     slideShadows: false,
    *   },
@@ -958,6 +1000,7 @@ export interface SwiperOptions {
    * @example
    * ```js
    * const swiper = new Swiper('.swiper-container', {
+   *   effect: 'flip',
    *   flipEffect: {
    *     slideShadows: false,
    *   },
@@ -1047,7 +1090,7 @@ export interface SwiperOptions {
   mousewheel?: MousewheelOptions | boolean;
 
   /**
-   * Object with navigation parameters
+   * Object with navigation parameters or boolean `true` to enable with default settings.
    *
    * @example
    * ```js
@@ -1062,7 +1105,7 @@ export interface SwiperOptions {
   navigation?: NavigationOptions | boolean;
 
   /**
-   * Object with navigation parameters
+   * Object with pagination parameters or boolean `true` to enable with default settings.
    *
    * @example
    * ```js
@@ -1077,12 +1120,19 @@ export interface SwiperOptions {
   pagination?: PaginationOptions | boolean;
 
   /**
-   * Enable, if you want to use "parallaxed" elements inside of slider
+   * Object with parallax parameters or boolean `true` to enable with default settings.
+   *
+   * @example
+   * ```js
+   * const swiper = new Swiper('.swiper-container', {
+   *   parallax: true,
+   * });
+   * ```
    */
-  parallax?: boolean;
+  parallax?: ParallaxOptions | boolean;
 
   /**
-   * Object with scrollbar parameters
+   * Object with scrollbar parameters or boolean `true` to enable with default settings.
    *
    * @example
    * ```js

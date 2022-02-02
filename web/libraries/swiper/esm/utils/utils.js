@@ -1,4 +1,4 @@
-import { getWindow } from 'ssr-window';
+import { getDocument, getWindow } from 'ssr-window';
 
 function deleteProps(obj) {
   var object = obj;
@@ -27,6 +27,25 @@ function now() {
   return Date.now();
 }
 
+function getComputedStyle(el) {
+  var window = getWindow();
+  var style;
+
+  if (window.getComputedStyle) {
+    style = window.getComputedStyle(el, null);
+  }
+
+  if (!style && el.currentStyle) {
+    style = el.currentStyle;
+  }
+
+  if (!style) {
+    style = el.style;
+  }
+
+  return style;
+}
+
 function getTranslate(el, axis) {
   if (axis === void 0) {
     axis = 'x';
@@ -36,7 +55,7 @@ function getTranslate(el, axis) {
   var matrix;
   var curTransform;
   var transformMatrix;
-  var curStyle = window.getComputedStyle(el, null);
+  var curStyle = getComputedStyle(el, null);
 
   if (window.WebKitCSSMatrix) {
     curTransform = curStyle.transform || curStyle.webkitTransform;
@@ -73,17 +92,29 @@ function getTranslate(el, axis) {
 }
 
 function isObject(o) {
-  return typeof o === 'object' && o !== null && o.constructor && o.constructor === Object;
+  return typeof o === 'object' && o !== null && o.constructor && Object.prototype.toString.call(o).slice(8, -1) === 'Object';
+}
+
+function isNode(node) {
+  // eslint-disable-next-line
+  if (typeof window !== 'undefined' && typeof window.HTMLElement !== 'undefined') {
+    return node instanceof HTMLElement;
+  }
+
+  return node && (node.nodeType === 1 || node.nodeType === 11);
 }
 
 function extend() {
   var to = Object(arguments.length <= 0 ? undefined : arguments[0]);
+  var noExtend = ['__proto__', 'constructor', 'prototype'];
 
   for (var i = 1; i < arguments.length; i += 1) {
     var nextSource = i < 0 || arguments.length <= i ? undefined : arguments[i];
 
-    if (nextSource !== undefined && nextSource !== null) {
-      var keysArray = Object.keys(Object(nextSource));
+    if (nextSource !== undefined && nextSource !== null && !isNode(nextSource)) {
+      var keysArray = Object.keys(Object(nextSource)).filter(function (key) {
+        return noExtend.indexOf(key) < 0;
+      });
 
       for (var nextIndex = 0, len = keysArray.length; nextIndex < len; nextIndex += 1) {
         var nextKey = keysArray[nextIndex];
@@ -91,10 +122,19 @@ function extend() {
 
         if (desc !== undefined && desc.enumerable) {
           if (isObject(to[nextKey]) && isObject(nextSource[nextKey])) {
-            extend(to[nextKey], nextSource[nextKey]);
+            if (nextSource[nextKey].__swiper__) {
+              to[nextKey] = nextSource[nextKey];
+            } else {
+              extend(to[nextKey], nextSource[nextKey]);
+            }
           } else if (!isObject(to[nextKey]) && isObject(nextSource[nextKey])) {
             to[nextKey] = {};
-            extend(to[nextKey], nextSource[nextKey]);
+
+            if (nextSource[nextKey].__swiper__) {
+              to[nextKey] = nextSource[nextKey];
+            } else {
+              extend(to[nextKey], nextSource[nextKey]);
+            }
           } else {
             to[nextKey] = nextSource[nextKey];
           }
@@ -120,4 +160,30 @@ function bindModuleMethods(instance, obj) {
   });
 }
 
-export { deleteProps, nextTick, now, getTranslate, isObject, extend, bindModuleMethods };
+function classesToSelector(classes) {
+  if (classes === void 0) {
+    classes = '';
+  }
+
+  return "." + classes.trim().replace(/([\.:!\/])/g, '\\$1') // eslint-disable-line
+  .replace(/ /g, '.');
+}
+
+function createElementIfNotDefined($container, params, createElements, checkProps) {
+  var document = getDocument();
+
+  if (createElements) {
+    Object.keys(checkProps).forEach(function (key) {
+      if (!params[key] && params.auto === true) {
+        var element = document.createElement('div');
+        element.className = checkProps[key];
+        $container.append(element);
+        params[key] = element;
+      }
+    });
+  }
+
+  return params;
+}
+
+export { deleteProps, nextTick, now, getTranslate, isObject, extend, bindModuleMethods, getComputedStyle, classesToSelector, createElementIfNotDefined };

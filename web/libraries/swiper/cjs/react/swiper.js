@@ -23,9 +23,11 @@ var _virtual = require("./virtual");
 
 var _useIsomorphicLayoutEffect = require("./use-isomorphic-layout-effect");
 
-function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function _getRequireWildcardCache() { return cache; }; return cache; }
+var _excluded = ["className", "tag", "wrapperTag", "children", "onSwiper"];
 
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function _getRequireWildcardCache(nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
+
+function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(nodeInterop); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
 
 function _extends() { _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; }; return _extends.apply(this, arguments); }
 
@@ -40,7 +42,9 @@ var Swiper = /*#__PURE__*/(0, _react.forwardRef)(function (_temp, externalElRef)
       WrapperTag = _ref$wrapperTag === void 0 ? 'div' : _ref$wrapperTag,
       children = _ref.children,
       onSwiper = _ref.onSwiper,
-      rest = _objectWithoutPropertiesLoose(_ref, ["className", "tag", "wrapperTag", "children", "onSwiper"]);
+      rest = _objectWithoutPropertiesLoose(_ref, _excluded);
+
+  var eventsAssigned = false;
 
   var _useState = (0, _react.useState)('swiper-container'),
       containerClasses = _useState[0],
@@ -67,15 +71,12 @@ var Swiper = /*#__PURE__*/(0, _react.forwardRef)(function (_temp, externalElRef)
   var _getParams = (0, _getParams2.getParams)(rest),
       swiperParams = _getParams.params,
       passedParams = _getParams.passedParams,
-      restProps = _getParams.rest;
+      restProps = _getParams.rest,
+      events = _getParams.events;
 
   var _getChildren = (0, _getChildren2.getChildren)(children),
       slides = _getChildren.slides,
       slots = _getChildren.slots;
-
-  var changedParams = (0, _getChangedParams.getChangedParams)(passedParams, oldPassedParamsRef.current, slides, oldSlides.current);
-  oldPassedParamsRef.current = passedParams;
-  oldSlides.current = slides;
 
   var onBeforeBreakpoint = function onBeforeBreakpoint() {
     setBreakpointChanged(!breakpointChanged);
@@ -89,6 +90,8 @@ var Swiper = /*#__PURE__*/(0, _react.forwardRef)(function (_temp, externalElRef)
 
   if (!swiperElRef.current) {
     // init swiper
+    Object.assign(swiperParams.on, events);
+    eventsAssigned = true;
     swiperRef.current = (0, _initSwiper.initSwiper)(swiperParams);
 
     swiperRef.current.loopCreate = function () {};
@@ -115,6 +118,20 @@ var Swiper = /*#__PURE__*/(0, _react.forwardRef)(function (_temp, externalElRef)
   if (swiperRef.current) {
     swiperRef.current.on('_beforeBreakpoint', onBeforeBreakpoint);
   }
+
+  var attachEvents = function attachEvents() {
+    if (eventsAssigned || !events || !swiperRef.current) return;
+    Object.keys(events).forEach(function (eventName) {
+      swiperRef.current.on(eventName, events[eventName]);
+    });
+  };
+
+  var detachEvents = function detachEvents() {
+    if (!events || !swiperRef.current) return;
+    Object.keys(events).forEach(function (eventName) {
+      swiperRef.current.off(eventName, events[eventName]);
+    });
+  };
 
   (0, _react.useEffect)(function () {
     return function () {
@@ -153,9 +170,27 @@ var Swiper = /*#__PURE__*/(0, _react.forwardRef)(function (_temp, externalElRef)
   }, []); // watch for params change
 
   (0, _useIsomorphicLayoutEffect.useIsomorphicLayoutEffect)(function () {
+    attachEvents();
+    var changedParams = (0, _getChangedParams.getChangedParams)(passedParams, oldPassedParamsRef.current, slides, oldSlides.current);
+    oldPassedParamsRef.current = passedParams;
+    oldSlides.current = slides;
+
     if (changedParams.length && swiperRef.current && !swiperRef.current.destroyed) {
-      (0, _updateSwiper.updateSwiper)(swiperRef.current, slides, passedParams, changedParams);
+      (0, _updateSwiper.updateSwiper)({
+        swiper: swiperRef.current,
+        slides: slides,
+        passedParams: passedParams,
+        changedParams: changedParams,
+        nextEl: nextElRef.current,
+        prevEl: prevElRef.current,
+        scrollbarEl: scrollbarElRef.current,
+        paginationEl: paginationElRef.current
+      });
     }
+
+    return function () {
+      detachEvents();
+    };
   }); // update on virtual update
 
   (0, _useIsomorphicLayoutEffect.useIsomorphicLayoutEffect)(function () {

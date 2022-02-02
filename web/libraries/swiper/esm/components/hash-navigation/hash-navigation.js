@@ -4,7 +4,7 @@ import { getWindow, getDocument } from 'ssr-window';
 import $ from '../../utils/dom';
 import { bindModuleMethods } from '../../utils/utils';
 var HashNavigation = {
-  onHashCange: function onHashCange() {
+  onHashChange: function onHashChange() {
     var swiper = this;
     var document = getDocument();
     swiper.emit('hashChange');
@@ -56,7 +56,7 @@ var HashNavigation = {
     }
 
     if (swiper.params.hashNavigation.watchState) {
-      $(window).on('hashchange', swiper.hashNavigation.onHashCange);
+      $(window).on('hashchange', swiper.hashNavigation.onHashChange);
     }
   },
   destroy: function destroy() {
@@ -64,7 +64,7 @@ var HashNavigation = {
     var window = getWindow();
 
     if (swiper.params.hashNavigation.watchState) {
-      $(window).off('hashchange', swiper.hashNavigation.onHashCange);
+      $(window).off('hashchange', swiper.hashNavigation.onHashChange);
     }
   }
 };
@@ -96,7 +96,7 @@ export default {
         swiper.hashNavigation.destroy();
       }
     },
-    transitionEnd: function transitionEnd(swiper) {
+    'transitionEnd _freeModeNoMomentumRelease': function transitionEnd_freeModeNoMomentumRelease(swiper) {
       if (swiper.hashNavigation.initialized) {
         swiper.hashNavigation.setHash();
       }

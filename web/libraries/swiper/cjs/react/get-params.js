@@ -20,6 +20,7 @@ function getParams(obj) {
   var params = {
     on: {}
   };
+  var events = {};
   var passedParams = {};
   (0, _utils.extend)(params, _core.default.defaults);
   (0, _utils.extend)(params, _core.default.extendedDefaults);
@@ -43,17 +44,19 @@ function getParams(obj) {
         passedParams[key] = obj[key];
       }
     } else if (key.search(/on[A-Z]/) === 0 && typeof obj[key] === 'function') {
-      params.on["" + key[2].toLowerCase() + key.substr(3)] = obj[key];
+      events["" + key[2].toLowerCase() + key.substr(3)] = obj[key];
     } else {
       rest[key] = obj[key];
     }
   });
   ['navigation', 'pagination', 'scrollbar'].forEach(function (key) {
-    if (params[key] === true || params[key] === false) params[key] = {};
+    if (params[key] === true) params[key] = {};
+    if (params[key] === false) delete params[key];
   });
   return {
     params: params,
     passedParams: passedParams,
-    rest: rest
+    rest: rest,
+    events: events
   };
 }

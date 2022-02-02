@@ -26,14 +26,31 @@ function allowed_formats_form_field_config_edit_form_alter(array &$form, FormSta
       $options[$format->id()] = $format->label();
     }
 
-    $form['third_party_settings']['allowed_formats'] = [
+    $settings = $field->getThirdPartySettings('allowed_formats');
+    $form['third_party_settings']['allowed_formats']['allowed_formats'] = [
       '#type' => 'checkboxes',
       '#title' => t('Allowed formats'),
       '#options' => $options,
-      '#default_value' => $field->getThirdPartySettings('allowed_formats'),
+      '#default_value' => !empty($settings['allowed_formats']) ? $settings['allowed_formats'] : [],
       '#description' => t('Restrict which text formats are allowed, given the user has the required permissions. If no text formats are selected, then all the ones the user has access to will be available.'),
     ];
+
+    $form['#validate'][] = 'allowed_formats_form_field_config_edit_form_validate';
   }
+}
+
+/**
+ * Validation handler for field_config_edit_form.
+ */
+function allowed_formats_form_field_config_edit_form_validate(array &$form, FormStateInterface $form_state) {
+  // Restructure options to store the value as a sequence.
+  $form_parents = [
+    'third_party_settings',
+    'allowed_formats',
+    'allowed_formats',
+  ];
+  $value = $form_state->getValue($form_parents);
+  $form_state->setValue($form_parents, array_keys(array_filter($value)));
 }
 
 /**
@@ -72,7 +89,7 @@ function allowed_formats_field_widget_form_alter(&$element, FormStateInterface $
       // Read configuration if available.  This is possible for bundle fields or
       // base fields overridden using a BaseFieldOverride.
       $field_configuration = $field_definition->getConfig($field_definition->getTargetBundle());
-      $allowed_formats_setting = $field_configuration->getThirdPartySettings('allowed_formats');
+      $allowed_formats_setting = $field_configuration->getThirdPartySetting('allowed_formats', 'allowed_formats');
     }
     else {
       // Base fields don't support third party settings so use an ordinary
@@ -81,11 +98,8 @@ function allowed_formats_field_widget_form_alter(&$element, FormStateInterface $
       $allowed_formats_setting = $field_definition->getSetting('allowed_formats');
     }
 
-    if (isset($allowed_formats_setting) && is_array($allowed_formats_setting)) {
-      $allowed_formats = array_filter($allowed_formats_setting);
-      if (!empty($allowed_formats)) {
-        $element['#allowed_formats'] = $allowed_formats;
-      }
+    if (!empty($allowed_formats_setting) && is_array($allowed_formats_setting)) {
+      $element['#allowed_formats'] = $allowed_formats_setting;
     }
 
     /** @var \Drupal\Core\Field\WidgetInterface $widget */

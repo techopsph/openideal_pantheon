@@ -8,7 +8,7 @@
 /**
  * Provide configuration for social share buttons.
  *
- * @return
+ * @return array
  *   Array of button configuration.  The key is an identifier for the button.
  *   The value is an associative array that may contain the following key-value pairs.
  *   You must pass at least one of share_url and follow_url, and you may pass both.
@@ -31,7 +31,7 @@ function hook_rrssb_buttons() {
 /**
  * Alter the configuration for social share buttons provided by other modules.
  *
- * @param $buttons
+ * @param array $buttons
  *   Existing button configuration, see @hook_rrssb_buttons.
  */
 function hook_rrssb_buttons_alter(&$buttons) {

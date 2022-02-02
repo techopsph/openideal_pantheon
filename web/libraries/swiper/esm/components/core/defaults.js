@@ -6,7 +6,11 @@ export default {
   speed: 300,
   cssMode: false,
   updateOnWindowResize: true,
+  resizeObserver: false,
   nested: false,
+  createElements: false,
+  enabled: true,
+  focusableElements: 'input, select, option, textarea, button, video, label',
   // Overrides
   width: null,
   height: null,
@@ -38,6 +42,7 @@ export default {
   // 'slide' or 'fade' or 'cube' or 'coverflow' or 'flip'
   // Breakpoints
   breakpoints: undefined,
+  breakpointsBase: 'window',
   // Slides grid
   spaceBetween: 0,
   slidesPerView: 1,

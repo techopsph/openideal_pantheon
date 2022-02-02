@@ -25,7 +25,7 @@ const RRSSB_DEFAULT_IMAGE_TOKEN = '[node:field_image:url]|[rrssbsite:logo-url]';
  * These tokens are not advertised in hook_token_info because they are of no
  * use outside this module.
  */
-function rrssb_tokens($type, $tokens, array $data = [], array $options = [], BubbleableMetadata $bubbleable_metadata) {
+function rrssb_tokens($type, $tokens, array $data, array $options, BubbleableMetadata $bubbleable_metadata) {
   $replacements = [];
   $urlencode = isset($options['urlencode']);
 
@@ -135,11 +135,10 @@ function rrssb_library_info_alter(&$libraries, $extension) {
  *
  * @param object $node
  *   The node object to build buttons for.
- *
  * @param string $context
  *   Additional cache context to set if applicable.
  *
- * @return array render
+ * @return array
  *   A render array for the list of buttons.
  */
 function rrssb_get_buttons($buttonSet, $node, $context = NULL) {
@@ -165,10 +164,15 @@ function rrssb_get_buttons($buttonSet, $node, $context = NULL) {
     $image_tokens = explode('|', $config->get('image_tokens') ?: RRSSB_DEFAULT_IMAGE_TOKEN);
 
     $mapping = [
-      'url' => ['[node:url]', '[current-page:url]'],
+      'url' => ['[current-page:url]'],
       'title' => ['[node:title]', '[current-page:title]'],
       'image' => $image_tokens,
     ];
+
+    // New nodes (in preview) don't yet have a URL.
+    if ($node && !$node->isNew()) {
+      array_unshift($mapping['url'], '[node:url]');
+    }
 
     // Replace tokens.
     foreach ($mapping as $param => $tokens) {
